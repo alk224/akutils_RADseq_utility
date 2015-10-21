@@ -92,6 +92,7 @@ directory.  Remove or rename one of them and try again.  Exiting.
 	index=($4)
 	read1=($5)
 	read2=($6)
+	issuedcommand="RADseq_workflow.sh $1 $2 $3 $4 $5 $6"
 
 ## Define sequencing mode based on number of supplied inputs
 	if [[ "$#" == 5 ]]; then
@@ -111,6 +112,7 @@ directory.  Remove or rename one of them and try again.  Exiting.
 
 ## Define working directory and log file
 	date0=`date +%Y%m%d_%I%M%p`
+	date100=`date -R`
 	workdir=$(pwd)
 	outdir=($workdir/RADseq_workflow_${analysis})
 	outdirunc=($outdir/uncorrected_output)
@@ -120,12 +122,38 @@ directory.  Remove or rename one of them and try again.  Exiting.
 Output directory already exists.  Attempting to use previously generated
 ouputs.
 	"
+	log=`ls $outdir/log_RADseq_workflow_* | head -1`
+	echo "
+********************************************************************************
+********************************************************************************
 
+RADseq_workflow.sh was rerun.
+$date100
+
+Command as issued:
+	$issuedcommand
+
+********************************************************************************
+********************************************************************************
+	" >> $log
 	else
 	mkdir -p $outdir
-	fi
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
+	echo "
+********************************************************************************
+********************************************************************************
+
+RADseq_workflow.sh was run.
+$date100
+
+Command as issued:
+	$issuedcommand
+
+********************************************************************************
+********************************************************************************
+	" >> $log
+	fi
 
 ## Read in variables from config file
 	local_config_count=(`ls akutils*.config 2>/dev/null | wc -w`)
@@ -659,9 +687,10 @@ while so be patient.
 "
 echo "adding Stacks output to mysql database.
 " >> $log
+
 	# drop existing mysql databases in preparation for replacement
-	mysql -e "DROP DATABASE $dbunc" 2>/dev/null
-	mysql -e "DROP DATABASE $dbcor" 2>/dev/null
+	mysql -e "DROP DATABASE $dbunc" 2>/dev/null || true
+	mysql -e "DROP DATABASE $dbcor" 2>/dev/null || true
 
 	# create new mysql databases
 	echo "	mysql -e \"CREATE DATABASE $dbunc\"" >> $log
@@ -678,8 +707,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing uncorrected data.
 "
-echo "	load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e "$dbname0 uncorrected output" -M popmap.txt -c" >> $log
-load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e "$dbname0 uncorrected output" -M popmap.txt -c &>/dev/null
+echo "	load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e \"$dbname uncorrected output\" -M popmap.txt -c" >> $log
+load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e "$dbname uncorrected output" -M popmap.txt -c &>/dev/null
 echo "	index_radtags.pl -D $dbunc -c -t
 " >> $log
 index_radtags.pl -D $dbunc -c -t &>/dev/null
@@ -702,8 +731,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing corrected data.
 "
-echo "	load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e "$dbname0 corrected output" -M popmap.txt -c" >> $log
-load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e "$dbname0 corrected output" -M popmap.txt -c &>/dev/null
+echo "	load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e \"$dbname corrected output\" -M popmap.txt -c" >> $log
+load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e "$dbname corrected output" -M popmap.txt -c &>/dev/null
 echo "	index_radtags.pl -D $dbcor -c -t
 " >> $log
 index_radtags.pl -D $dbcor -c -t &>/dev/null
