@@ -22,11 +22,22 @@
 #     misrepresented as being the original software.
 #  3. This notice may not be removed or altered from any source distribution.
 #
+## Trap function on exit.
+function finish {
+if [[ -f $mapfile ]]; then
+	rm $mapfile
+fi
+if [[ -f $stderr ]]; then
+	rm $stderr
+fi
+}
+trap finish EXIT
 
 set -e
 scriptdir="$( cd "$( dirname "$0" )" && pwd )"
 configutilitypath=`command -v akutils_config_utility.sh`
 akutilsdir="$( dirname $configutilitypath )"
+randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
 
 ## Check whether user had supplied -h or --help. If yes display help 
 	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
@@ -87,7 +98,7 @@ directory.  Remove or rename one of them and try again.  Exiting.
 	dbname=($1)
 	dbunc=(${dbname}_uncorrected_radtags)
 	dbcor=(${dbname}_corrected_radtags)
-	mapfile=($2)
+	metadatafile=($2)
 	ref=($3)
 	index=($4)
 	read1=($5)
@@ -192,6 +203,30 @@ Sequencing mode detected: $mode1
 Analysis type: $analysis
 CPU cores: $cores
 "
+
+## Parse metadata file contents
+SampleIDcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "SampleID") printf(i) } exit 0}' $metadatafile)
+Indexcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "IndexSequence") printf(i) } exit 0}' $metadatafile)
+Repcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "Rep") printf(i) } exit 0}' $metadatafile)
+Popcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "PopulationID") printf(i) } exit 0}' $metadatafile)
+
+## Extract indexing data from metadata file
+grep -v "#" $metadatafile | cut -f${SampleIDcol} > ${randcode}_sampleids.temp
+grep -v "#" $metadatafile | cut -f${Indexcol} > ${randcode}_indexes.temp
+paste ${randcode}_sampleids.temp ${randcode}_indexes.temp > ${randcode}_map.temp
+wait
+rm ${randcode}_sampleids.temp ${randcode}_indexes.temp 2>/dev/null || true
+
+mapfile="${randcode}_map.temp"
+	if [[ ! -f $mapfile ]]; then
+		echo "Unexpected problem.  Demultiplexing map not generated.
+Exiting.
+		"
+	exit 1
+	fi
+
+exit 0
+
 
 ## Demultiplex quality-filtered sequencing data with fastq-multx
 if [[ -d $outdir/demultiplexed_data ]]; then
@@ -687,6 +722,8 @@ while so be patient.
 "
 echo "adding Stacks output to mysql database.
 " >> $log
+	echo $dbunc > $outdirunc/.mysql_database
+	echo $dbcor > $outdircor/.mysql_database
 
 	# drop existing mysql databases in preparation for replacement
 	mysql -e "DROP DATABASE $dbunc" 2>/dev/null || true
