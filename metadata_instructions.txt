@@ -1,0 +1,7 @@
+Column	Usage
+WellID	Don't change
+SampleID	Sample names.  Reps must have a numerical designator to match the rep column.  If no reps, sample name will suffice.
+IndexSequence	Sequence the demultiplexing step will encounter.
+Rep	Integer value starting at 1.
+PopulationID	Name/number of the population each sample belongs to.
+
