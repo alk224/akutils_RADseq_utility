@@ -1,7 +1,26 @@
 Column	Usage
 WellID	Don't change
-SampleID	Sample names.  Reps must have a numerical designator to match the rep column.  If no reps, sample name will suffice.
+SampleID	Sample names.  Reps must have a numerical designator to match the rep column.  If no reps, sample name will suffice.  Period allowed ONLY to designate reps.
 IndexSequence	Sequence the demultiplexing step will encounter.
 Rep	Integer value starting at 1.  If no reps, set all samples to 1.
 PopulationID	Name/number of the population each sample belongs to.
 
+Examples below.
+
+################################################################################
+File without replicates:
+
+#WellPosition	SampleID	IndexSequence	Rep	PopulationID
+A1	Sample1	TTCATCCGTAACGGGA	1	1
+B1	Sample2	TTCATCCGGTACCTCA	1	1
+C1	Sample3	TTCATCCGTATGGACC	1	2
+D1	Sample4	TTCATCCGGATCACTC	1	2
+
+################################################################################
+File with replicates:
+
+#WellPosition	SampleID	IndexSequence	Rep	PopulationID
+A1	Sample1.1	TTCATCCGTAACGGGA	1	1
+B1	Sample2.1	TTCATCCGGTACCTCA	1	2
+C1	Sample1.2	TTCATCCGTATGGACC	2	1
+D1	Sample2.2	TTCATCCGGATCACTC	2	2
