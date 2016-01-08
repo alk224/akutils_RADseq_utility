@@ -25,10 +25,7 @@
 ## Trap function on exit.
 function finish {
 if [[ -f $mapfile ]]; then
-	rm $mapfile
-fi
-if [[ -f $stderr ]]; then
-	rm $stderr
+	rm -r $tempdir
 fi
 }
 trap finish EXIT
@@ -96,8 +93,6 @@ directory.  Remove or rename one of them and try again.  Exiting.
 
 ## Define inputs and working directory
 	dbname=($1)
-	dbunc=(${dbname}_uncorrected_radtags)
-	dbcor=(${dbname}_corrected_radtags)
 	metadatafile=($2)
 	ref=($3)
 	index=($4)
@@ -121,11 +116,28 @@ directory.  Remove or rename one of them and try again.  Exiting.
 	analysis=(reference)
 	fi
 
+## Define database names
+	if [[  "$ref" == "denovo" ]]; then
+	dbunc=(${dbname}_denovo_uncor_radtags)
+	dbuncderep=(${dbname}_denovo_uncor_derep_radtags)
+	dbcor=(${dbname}_denovo_cor_radtags)
+	dbcorderep=(${dbname}_denovo_cor_derep_radtags)
+	else
+	dbunc=(${dbname}_ref_uncor_radtags)
+	dbuncderep=(${dbname}_ref_uncor_derep_radtags)
+	dbcor=(${dbname}_ref_cor_radtags)
+	dbcorderep=(${dbname}_ref_cor_derep_radtags)
+	fi
+
+## Batch variable (may need to update for flexibility)
+	batch="1"
+
 ## Define working directory and log file
 	date0=`date +%Y%m%d_%I%M%p`
 	date100=`date -R`
 	workdir=$(pwd)
-	outdir=($workdir/RADseq_workflow_${analysis})
+	outdir="$workdir/RADseq_workflow_${analysis}"
+	tempdir="$outdir/temp"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
 	if [[ -d $outdir ]]; then
@@ -149,6 +161,7 @@ Command as issued:
 	" >> $log
 	else
 	mkdir -p $outdir
+	mkdir -p $tempdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
 	echo "
@@ -210,14 +223,15 @@ Indexcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "IndexSequence") printf(i) } exi
 Repcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "Rep") printf(i) } exit 0}' $metadatafile)
 Popcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "PopulationID") printf(i) } exit 0}' $metadatafile)
 
-## Extract indexing data from metadata file
-grep -v "#" $metadatafile | cut -f${SampleIDcol} > ${randcode}_sampleids.temp
-grep -v "#" $metadatafile | cut -f${Indexcol} > ${randcode}_indexes.temp
-paste ${randcode}_sampleids.temp ${randcode}_indexes.temp > ${randcode}_map.temp
+## Extract data from metadata file
+	#Demultiplexing file
+mapfile="$tempdir/${randcode}_map.temp"
+grep -v "#" $metadatafile | cut -f${SampleIDcol} > $tempdir/${randcode}_sampleids.temp
+grep -v "#" $metadatafile | cut -f${Indexcol} > $tempdir/${randcode}_indexes.temp
+grep -v "#" $metadatafile | cut -f${Popcol} > $tempdir/${randcode}_pops.temp
+paste $tempdir/${randcode}_sampleids.temp $tempdir/${randcode}_indexes.temp > $mapfile
 wait
-rm ${randcode}_sampleids.temp ${randcode}_indexes.temp 2>/dev/null || true
 
-mapfile="${randcode}_map.temp"
 	if [[ ! -f $mapfile ]]; then
 		echo "Unexpected problem.  Demultiplexing map not generated.
 Exiting.
@@ -225,8 +239,21 @@ Exiting.
 	exit 1
 	fi
 
-exit 0
+	#Dereplication file
+repfile="$tempdir/${randcode}_repids.temp"
+repfile1="$tempdir/${randcode}_repids1.temp"
+awk -v repcol="$Repcol" '$repcol == 1' $metadatafile | cut -f${SampleIDcol} | cut -f1 -d"." > $repfile
+awk -v repcol="$Repcol" '$repcol == 1' $metadatafile > $repfile1
 
+	#Populations file
+popmap="$tempdir/${randcode}_popids.temp"
+popmap1="$tempdir/${randcode}_popids1.temp"
+paste $tempdir/${randcode}_sampleids.temp $tempdir/${randcode}_pops.temp 2>/dev/null > $popmap
+
+	#Populations file for dereplicated data
+cat $repfile1 | cut -f${SampleIDcol} | cut -f1 -d"." > $tempdir/${randcode}_derep_ids.temp
+cat $repfile1 | cut -f${Popcol} | cut -f1 -d"." > $tempdir/${randcode}_derep_pops.temp
+paste $tempdir/${randcode}_derep_ids.temp $tempdir/${randcode}_derep_pops.temp 2>/dev/null > $popmap1
 
 ## Demultiplex quality-filtered sequencing data with fastq-multx
 if [[ -d $outdir/demultiplexed_data ]]; then
@@ -266,6 +293,32 @@ runtime=`printf "Demutliplexing runtime: %d days %02d hours %02d minutes %02.1f 
 echo "$runtime
 " >> $log
 fi
+
+## Dereplicate samples if necessary
+samplecount=$(grep -v "#" $metadatafile 2>/dev/null | wc -l)
+repscount=$(awk -v repcol="$Repcol" '$repcol == 1' $metadatafile 2>/dev/null | wc -l)
+
+	if [[ $samplecount == $repscount ]]; then
+	reps="no"
+	echo "No replicates detected.  Skipping dereplication step.
+	"
+	else
+	reps="yes"
+
+	if [[ -d $outdir/dereplicated_data ]]; then
+	echo "Dereplication previously completed.  Skipping step.
+$outdir/dereplicated_data
+	"
+	else
+	mkdir -p $outdir/dereplicated_data
+
+	for sampleid in `cat $repfile`; do
+		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read1.fq
+		cat $outdir/demultiplexed_data/${sampleid}*read2.fq > $outdir/dereplicated_data/${sampleid}.read2.fq
+	done
+
+	fi
+	fi
 
 ## Quality filter sequencing data with fastq-mcf
 if [[ -d $outdir/quality_filtered_data ]]; then
@@ -307,6 +360,33 @@ mkdir -p $outdir/quality_filtered_data
 	fi
 wait
 
+	if [[ $reps == "yes" ]]; then
+		if [[ ! -d $outdir/dereplicated_quality_filtered_data ]]; then
+			mkdir -p $outdir/dereplicated_quality_filtered_data
+
+	if [[ "$mode" == "single" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
+		sleep 1
+		done
+		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq" >> $log
+		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
+	done
+	fi
+	if [[ "$mode" == "paired" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
+		sleep 1
+		done
+		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq" >> $log
+		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
+	done
+	fi
+wait
+
+		fi
+	fi
+
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
 dd=$(echo "$dt/86400" | bc)
@@ -321,8 +401,111 @@ echo "$runtime
 " >> $log
 fi
 
+## Join and concatenate separate fastq files (denovo analysis only) ## Stacks is choking on variable length reads. Combine only.
+## Combine separate read files
+res2=$(date +%s.%N)
+if [[ "$analysis" == "denovo" && "$mode" == "paired" ]]; then
+if [[ ! -d $outdir/combined_data || ! -d $outdir/dereplicated_combined_data ]]; then
+	if [[ -d $outdir/combined_data ]]; then
+echo "Combining previously performed.  Skipping step.
+$outdir/combined_data
+"
+else
+echo "Combining read data.
+"
+echo "Combining read data.
+" >> $log
+	mkdir -p $outdir/combined_data
+	for sampleid in `cat $tempdir/${randcode}_sampleids.temp`; do
+	echo "	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq" >> $log
+	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq
+	done
+	echo "" >> $log
+	fi
+
+	if [[ $reps == "yes" ]]; then
+	if [[ -d $outdir/dereplicated_combined_data ]]; then
+echo "Combining previously performed (dereplicated data).  Skipping step.
+$outdir/dereplicated_combined_data
+"
+else
+echo "Combining read data (dereplicated data).
+"
+echo "Combining read data (dereplicated data).
+" >> $log
+	mkdir -p $outdir/dereplicated_combined_data
+	for sampleid in `cat $tempdir/${randcode}_derep_ids.temp`; do
+	echo "	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq" >> $log
+	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq
+	done
+	echo "" >> $log
+	fi
+	fi
+
+#if [[ ! -d $outdir/joined_data || ! -d $outdir/dereplicated_joined_data ]]; then
+#	if [[ -d $outdir/joined_data ]]; then
+#echo "Joining/combining previously performed.  Skipping step.
+#$outdir/joined_data
+#"
+#else
+#echo "Joining read data with fastq-join (-p 10 -m 20).
+#"
+#echo "Joining read data with fastq-join (-p 10 -m 20).
+#" >> $log
+#	mkdir -p $outdir/joined_data
+#	for sampleid in `cat $tempdir/${randcode}_sampleids.temp`; do
+#	echo "	fastq-join -m 20 $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/joined_data/${sampleid}.%.fq &> $outdir/joined_data/${sampleid}.fqjoin.log" >> $log
+#	echo "SampleID: $sampleid" > $outdir/joined_data/${sampleid}.fqjoin.log
+#	fastq-join -m 20 $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/joined_data/${sampleid}.%.fq &>> $outdir/joined_data/${sampleid}.fqjoin.log
+#	cat $outdir/joined_data/${sampleid}.join.fq $outdir/joined_data/${sampleid}.un1.fq $outdir/joined_data/${sampleid}.un2.fq > $outdir/joined_data/${sampleid}.fq
+#	wait
+#	rm $outdir/joined_data/${sampleid}.join.fq $outdir/joined_data/${sampleid}.un1.fq $outdir/joined_data/${sampleid}.un2.fq
+#	done
+#	echo "" >> $log
+#	fi
+
+#	if [[ $reps == "yes" ]]; then
+#	if [[ -d $outdir/dereplicated_joined_data ]]; then
+#echo "Joining/combining previously performed (dereplicated data).  Skipping step.
+#$outdir/dereplicated_joined_data
+#"
+#else
+#echo "Joining read data with fastq-join (dereplicated data, -p 10 -m 20).
+#"
+#echo "Joining read data with fastq-join (dereplicated data, -p 10 -m 20).
+#" >> $log
+#	mkdir -p $outdir/dereplicated_joined_data
+#	for sampleid in `cat $tempdir/${randcode}_derep_ids.temp`; do
+#	echo "	fastq-join -m 20 $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdirdereplicated_/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/dereplicated_joined_data/${sampleid}.%.fq &> $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log" >> $log
+#	echo "SampleID: $sampleid" > $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log
+#	fastq-join -m 20 $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/dereplicated_joined_data/${sampleid}.%.fq &>> $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log
+#	cat $outdir/dereplicated_joined_data/${sampleid}.join.fq $outdir/dereplicated_joined_data/${sampleid}.un1.fq $outdir/dereplicated_joined_data/${sampleid}.un2.fq > $outdir/dereplicated_joined_data/${sampleid}.fq
+#	wait
+#	rm $outdir/dereplicated_joined_data/${sampleid}.join.fq $outdir/dereplicated_joined_data/${sampleid}.un1.fq $outdir/dereplicated_joined_data/${sampleid}.un2.fq
+#	done
+#	echo "" >> $log
+#	fi
+#	fi
+
+res3=$(date +%s.%N)
+dt=$(echo "$res3 - $res2" | bc)
+dd=$(echo "$dt/86400" | bc)
+dt2=$(echo "$dt-86400*$dd" | bc)
+dh=$(echo "$dt2/3600" | bc)
+dt3=$(echo "$dt2-3600*$dh" | bc)
+dm=$(echo "$dt3/60" | bc)
+ds=$(echo "$dt3-60*$dm" | bc)
+
+runtime=`printf "Read joining runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+echo "$runtime
+" >> $log
+fi
+fi
+
 ## Align each sample to reference (reference-based analysis only)
+res2=$(date +%s.%N)
 if [[ "$analysis" == "reference" ]]; then
+if [[ ! -d $outdir/bowtie2_alignments || ! -d $outdir/dereplicated_bowtie2_alignments ]]; then
 if [[ -d $outdir/bowtie2_alignments ]]; then
 echo "Alignments previously performed.  Skipping step.
 $outdir/bowtie2_alignments
@@ -334,14 +517,13 @@ Supplied reference: $ref
 echo "Aligning quality-filtered data to reference sequence(s).
 Supplied reference: $ref
 " >> $log
-res2=$(date +%s.%N)
 mkdir -p $outdir/bowtie2_alignments
 	if [[ "$mode" == "single" ]]; then
 	for line in `cat $mapfile | cut -f1`; do
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.fq -S $outdir/bowtie2_alignments/${line}.sam" >> $log
+		echo "	bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
 		( bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
 	done
 	fi
@@ -350,11 +532,45 @@ mkdir -p $outdir/bowtie2_alignments
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.fq -1 $outdir/quality_filtered_data/${line}.read2.fq -S $outdir/bowtie2_alignments/${line}.sam" >> $log
-		( bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.fq -1 $outdir/quality_filtered_data/${line}.read2.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+		echo "	bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
 	done
 	fi
 wait
+fi
+
+if [[ -d $outdir/dereplicated_bowtie2_alignments ]]; then
+echo "Alignments previously performed (dereplicated data).  Skipping step.
+$outdir/dereplicated_bowtie2_alignments
+"
+else
+echo "Aligning dereplicated quality-filtered data to reference sequence(s).
+Supplied reference: $ref
+"
+echo "Aligning dereplicated quality-filtered data to reference sequence(s).
+Supplied reference: $ref
+" >> $log
+mkdir -p $outdir/dereplicated_bowtie2_alignments
+	if [[ "$mode" == "single" ]]; then
+	for line in `cat $repfile`; do
+		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
+		sleep 1
+		done
+		echo "	bowtie2-align --local -x $ref -U $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -S $outdir/dereplicated_bowtie2_alignments/${line}.sam > $outdir/dereplicated_bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -U $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -S $outdir/dereplicated_bowtie2_alignments/${line}.sam > $outdir/dereplicated_bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+	done
+	fi
+	if [[ "$mode" == "paired" ]]; then
+	for line in `cat $repfile`; do
+		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
+		sleep 1
+		done
+		echo "	bowtie2-align --local -x $ref -1 $outdir/dereplicated_quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/dereplicated_quality_filtered_data/${line}.read2.mcf.fq -S $outdir/dereplicated_bowtie2_alignments/${line}.sam > $outdir/dereplicated_bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -1 $outdir/dereplicated_quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/dereplicated_quality_filtered_data/${line}.read2.mcf.fq -S $outdir/dereplicated_bowtie2_alignments/${line}.sam > $outdir/dereplicated_bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+	done
+	fi
+wait
+fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -380,8 +596,10 @@ echo "Start of uncorrected analysis steps.
 " >> $log
 
 ## Run pstacks for reference-aligned samples
+res2=$(date +%s.%N)
 if [[ "$analysis" == "reference" ]]; then
-if [[ -d $outdirunc/pstacks_output ]]; then
+	if [[ ! -d $outdirunc/pstacks_output || ! -d $outdirunc/dereplicated_pstacks_output ]]; then
+		if [[ -d $outdirunc/pstacks_output ]]; then
 echo "Pstacks output directory present.  Skipping step.
 $outdirunc/pstacks_output
 "
@@ -391,13 +609,31 @@ echo "Extracting stacks from sam files with pstacks.
 echo "Extracting stacks from sam files with pstacks.
 " >> $log
 mkdir -p $outdirunc/pstacks_output
-res2=$(date +%s.%N)
 #i=1
 	for line in `cat $mapfile | cut -f1`; do
 	echo "  pstacks -t sam -f $outdir/bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/pstacks_output -i $line" >> $log
 	pstacks -t sam -f $outdir/bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/pstacks_output -i $line &> $outdirunc/pstacks_output/log_${line}_pstacks.txt
 	#let "i+=1"
 	done
+		fi
+
+		if [[ $reps == "yes" ]]; then
+			if [[ -d $outdirunc/dereplicated_pstacks_output ]]; then
+echo "Pstacks output directory present (dereplicated data).  Skipping step.
+$outdirunc/dereplicated_pstacks_output
+"
+else
+echo "Extracting stacks from sam files with pstacks (dereplicated data).
+"
+echo "Extracting stacks from sam files with pstacks (dereplicated data).
+" >> $log
+mkdir -p $outdirunc/dereplicated_pstacks_output
+	for line in `cat $repfile | cut -f1`; do
+	echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $line" >> $log
+	pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $line &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
+	done
+			fi
+		fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -411,12 +647,14 @@ ds=$(echo "$dt3-60*$dm" | bc)
 runtime=`printf "Pstacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
 echo "$runtime
 " >> $log
-fi
+	fi
 fi
 
 ## Run ustacks for denovo samples
+res2=$(date +%s.%N)
 if [[ "$analysis" == "denovo" ]]; then
-if [[ -d $outdirunc/ustacks_output ]]; then
+	if [[ ! -d $outdirunc/ustacks_output || ! -d $outdirunc/dereplicated_ustacks_output ]]; then
+		if [[ -d $outdirunc/ustacks_output ]]; then
 echo "Ustacks output directory present.  Skipping step.
 $outdirunc/ustacks_output
 "
@@ -426,13 +664,49 @@ echo "Assembling loci denovo with ustacks.
 echo "Assembling loci denovo with ustacks.
 " >> $log
 mkdir -p $outdirunc/ustacks_output
-res2=$(date +%s.%N)
-#i=1
+			if [[ "$mode" == "single" ]]; then
 	for line in `cat $mapfile | cut -f1`; do
-	echo "  ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $line -m 2 -M 4 -N 6 -r -d" >> $log
-	ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $line -m 2 -M 4 -N 6 -r -d &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
-	#let "i+=1"
+	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+	echo "  ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
+	ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
 	done
+			fi
+			if [[ "$mode" == "paired" ]]; then
+	for line in `cat $mapfile | cut -f1`; do
+	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+	echo "  ustacks -t fastq -f $outdir/combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
+	ustacks -t fastq -f $outdir/combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
+	done
+			fi
+		fi
+
+		if [[ $reps == "yes" ]]; then
+			if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
+echo "Ustacks output directory present (dereplicated data).  Skipping step.
+$outdirunc/dereplicated_ustacks_output
+"
+else
+echo "Assembling loci denovo with ustacks (dereplicated data).
+"
+echo "Assembling loci denovo with ustacks (dereplicated data).
+" >> $log
+mkdir -p $outdirunc/dereplicated_ustacks_output
+				if [[ "$mode" == "single" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+	echo "  ustacks -t fastq -f $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
+	ustacks -t fastq -f $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
+	done
+				fi
+				if [[ "$mode" == "paired" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+	echo "  ustacks -t fastq -f $outdir/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
+	ustacks -t fastq -f $outdir/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
+	done
+				fi
+			fi
+		fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -446,11 +720,13 @@ ds=$(echo "$dt3-60*$dm" | bc)
 runtime=`printf "Ustacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
 echo "$runtime
 " >> $log
-fi
+	fi
 fi
 
 ## Run cstacks to catalog loci across samples
-if [[ -d $outdirunc/cstacks_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdirunc/cstacks_output || ! -d $outdirunc/dereplicated_cstacks_output ]]; then
+	if [[ -d $outdirunc/cstacks_output ]]; then
 echo "Cstacks output directory present.  Skipping step.
 $outdirunc/cstacks_output
 "
@@ -459,29 +735,69 @@ echo "Cataloging loci with cstacks.
 "
 echo "Cataloging loci with cstacks.
 " >> $log
-res2=$(date +%s.%N)
 	mcfcount=`ls $outdirunc/ustacks_output/*mcf* 2>/dev/null | wc -l`
-	if [[ $mcfcount -ge 1 ]]; then
+		if [[ $mcfcount -ge 1 ]]; then
 	cd $outdirunc/ustacks_output
-	rename 's/read.mcf.//' *mcf*
+	rename 's/read.mcf.//' *read.mcf*
+	rename 's/read1.mcf.//' *read1.mcf*
+	rename 's/read2.mcf.//' *read2.mcf*
 	cd $workdir
-	fi
+		fi
 
 mkdir -p $outdirunc/cstacks_output
 	samp=""
-	if [[ "$analysis" == "reference" ]]; then
+		if [[ "$analysis" == "reference" ]]; then
 	for line in `cat $mapfile | cut -f1`; do
 	samp+="-s $outdirunc/pstacks_output/$line "
 	done
-	echo "	cstacks -g -p $cores -b 1 -n 1 $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
-	cstacks -g -p $cores -b 1 -n 1 $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
-	fi
-	if [[ "$analysis" == "denovo" ]]; then
+	echo "	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
+	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
+		fi
+		if [[ "$analysis" == "denovo" ]]; then
 	for line in `cat $mapfile | cut -f1`; do
 	samp+="-s $outdirunc/ustacks_output/$line "
 	done
-	echo "	cstacks -p $cores -b 1 -n 4 -m $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
-	cstacks -p $cores -b 1 -n 4 -m $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
+	echo "	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
+	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
+		fi
+	fi
+
+	if [[ $reps == "yes" ]]; then
+		if [[ -d $outdirunc/dereplicated_cstacks_output ]]; then
+echo "Cstacks output directory present (dereplicated data).  Skipping step.
+$outdirunc/dereplicated_cstacks_output
+"
+else
+echo "Cataloging loci with cstacks (dereplicated data).
+"
+echo "Cataloging loci with cstacks (dereplicated data).
+" >> $log
+	mcfcount=`ls $outdirunc/dereplicated_ustacks_output/*mcf* 2>/dev/null | wc -l`
+			if [[ $mcfcount -ge 1 ]]; then
+	cd $outdirunc/dereplicated_ustacks_output
+	rename 's/read.mcf.//' *read.mcf*
+	rename 's/read1.mcf.//' *read1.mcf*
+	rename 's/read2.mcf.//' *read2.mcf*
+	cd $workdir
+			fi
+mkdir -p $outdirunc/dereplicated_cstacks_output
+	samp=""
+			if [[ "$analysis" == "reference" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+	samp+="-s $outdirunc/dereplicated_pstacks_output/$line "
+	done
+	echo "	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+			fi
+			if [[ "$analysis" == "denovo" ]]; then
+	for line in `cat $repfile | cut -f1`; do
+	samp+="-s $outdirunc/dereplicated_ustacks_output/$line "
+	done
+	echo "	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+			fi
+
+		fi
 	fi
 
 res3=$(date +%s.%N)
@@ -500,7 +816,9 @@ fi
 
 ## Search individual stacks against population catalog
 ## Need variables to manage batch IDs and catalog names
-if [[ -d $outdirunc/sstacks_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdirunc/sstacks_output || ! -d $outdirunc/dereplicated_sstacks_output ]]; then
+	if [[ -d $outdirunc/sstacks_output ]]; then
 echo "Sstacks output directory present.  Skipping step.
 $outdirunc/sstacks_output
 "
@@ -509,18 +827,42 @@ echo "Searching cataloged loci for each sample with sstacks.
 "
 echo "Searching cataloged loci for each sample with sstacks.
 " >> $log
-res2=$(date +%s.%N)
 mkdir -p $outdirunc/sstacks_output
 	for line in `cat $mapfile | cut -f1`; do
-	if [[ "$analysis" == "reference" ]]; then
-	echo "	sstacks -b 1 -c $outdirunc/cstacks_output/batch_1 -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b 1 -c $outdirunc/cstacks_output/batch_1 -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
-	fi
-	if [[ "$analysis" == "denovo" ]]; then
-	echo "	sstacks -b 1 -c $outdirunc/cstacks_output/batch_1 -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b 1 -c $outdirunc/cstacks_output/batch_1 -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
-	fi
+		if [[ "$analysis" == "reference" ]]; then
+	echo "	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
+		fi
+		if [[ "$analysis" == "denovo" ]]; then
+	echo "	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
+		fi
 	done
+	fi
+
+		if [[ $reps == "yes" ]]; then
+			if [[ -d $outdirunc/dereplicated_sstacks_output ]]; then
+echo "Sstacks output directory present (dereplicated data).  Skipping step.
+$outdirunc/dereplicated_sstacks_output
+"
+else
+echo "Searching cataloged loci for each sample with sstacks (dereplicated data).
+"
+echo "Searching cataloged loci for each sample with sstacks (dereplicated data).
+" >> $log
+mkdir -p $outdirunc/dereplicated_sstacks_output
+	for line in `cat $repfile | cut -f1`; do
+				if [[ "$analysis" == "reference" ]]; then
+	echo "	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_pstacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_pstacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt
+				fi
+				if [[ "$analysis" == "denovo" ]]; then
+	echo "	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_ustacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_ustacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt
+				fi
+	done
+			fi
+		fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -534,21 +876,24 @@ ds=$(echo "$dt3-60*$dm" | bc)
 runtime=`printf "Sstacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
 echo "$runtime
 " >> $log
+
 fi
 
 ## Copy all useful outputs to same directory for populations calculations
-if [[ -d $outdirunc/stacks_all_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdirunc/stacks_all_output || ! -d $outdirunc/dereplicated_stacks_all_output ]]; then
+	if [[ -d $outdirunc/stacks_all_output ]]; then
 echo "Populations directory present.  Skipping step.
 $outdirunc/stacks_all_output
 "
 else
 mkdir -p $outdirunc/stacks_all_output
-if [[ "$analysis" == "denovo" ]]; then
+		if [[ "$analysis" == "denovo" ]]; then
 cp $outdirunc/ustacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
-fi
-if [[ "$analysis" == "reference" ]]; then
+		fi
+		if [[ "$analysis" == "reference" ]]; then
 cp $outdirunc/pstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
-fi
+		fi
 cp $outdirunc/cstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
 cp $outdirunc/sstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
 
@@ -558,9 +903,41 @@ echo "Executing \"populations\" program to produce popgen stats and outputs.
 "
 echo "Executing \"populations\" program to produce popgen stats and outputs.
 " >> $log
-res2=$(date +%s.%N)
-	echo "	populations -t $cores -b 1 -P $outdirunc/stacks_all_output -M popmap.txt -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b 1 -P $outdirunc/stacks_all_output -M popmap.txt -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/stacks_all_output/log_populations.txt
+	" >> $log
+	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/stacks_all_output/log_populations.txt
+	fi
+
+## Dereplicated populations step
+	if [[ "$reps" == "yes" ]]; then
+	if [[ -d $outdirunc/dereplicated_stacks_all_output ]]; then
+echo "Populations directory present (dereplicated data).  Skipping step.
+$outdirunc/dereplicated_stacks_all_output
+"
+else
+mkdir -p $outdirunc/dereplicated_stacks_all_output
+		if [[ "$analysis" == "denovo" ]]; then
+cp $outdirunc/dereplicated_ustacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		fi
+		if [[ "$analysis" == "reference" ]]; then
+cp $outdirunc/dereplicated_pstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		fi
+cp $outdirunc/dereplicated_cstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+cp $outdirunc/dereplicated_sstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+
+## Run populations program to generate popgen stats plus various outputs
+## Need to add a variable for the popmap file, and change path as appropriate
+echo "Executing \"populations\" program to produce popgen stats and outputs
+(dereplicated data).
+"
+echo "Executing \"populations\" program to produce popgen stats and outputs
+(dereplicated data).
+" >> $log
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	" >> $log
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	fi
+	fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -585,7 +962,9 @@ echo "Start of corrected analysis steps.
 " >> $log
 
 ## Population-based corrections using rxstacks
-if [[ -d $outdircor/rxstacks_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdircor/rxstacks_output || ! -d $outdircor/dereplicated_rxstacks_output ]]; then
+	if [[ -d $outdircor/rxstacks_output ]]; then
 echo "Rxstacks output directory present.  Skipping step.
 $outdircor/rxstacks_output
 "
@@ -594,10 +973,31 @@ echo "Running rxstacks to correct SNP calls.
 "
 echo "Running rxstacks to correct SNP calls.
 " >> $log
-res2=$(date +%s.%N)
+
 mkdir -p $outdircor/rxstacks_output
-	echo "	rxstacks -b 1 -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt" >> $log
-	rxstacks -b 1 -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt
+	echo "	rxstacks -b ${batch} -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt
+	" >> $log
+	rxstacks -b ${batch} -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt
+	fi
+
+	if [[ "$reps" == "yes" ]]; then
+	if [[ -d $outdircor/dereplicated_rxstacks_output ]]; then
+echo "Rxstacks output directory present (dereplicated data).  Skipping step.
+$outdircor/dereplicated_rxstacks_output
+"
+else
+echo "Running rxstacks to correct SNP calls (dereplicated data).
+"
+echo "Running rxstacks to correct SNP calls (dereplicated data).
+" >> $log
+
+mkdir -p $outdircor/dereplicated_rxstacks_output
+	echo "	rxstacks -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -o $outdircor/dereplicated_rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/dereplicated_rxstacks_output/log_rxstacks.txt
+	" >> $log
+	rxstacks -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -o $outdircor/dereplicated_rxstacks_output --conf_lim 0.25 --prune_haplo --model_type bounded --bound_high 0.1 --lnl_lim -8.0 --lnl_dist -t $cores --verbose &> $outdircor/dereplicated_rxstacks_output/log_rxstacks.txt
+	fi
+	fi
+
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
 dd=$(echo "$dt/86400" | bc)
@@ -613,7 +1013,9 @@ echo "$runtime
 fi
 
 ## Rerun cstacks to rebuild catalog
-if [[ -d $outdircor/cstacks_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdircor/cstacks_output || ! -d $outdircor/dereplicated_cstacks_output ]]; then
+	if [[ -d $outdircor/cstacks_output ]]; then
 echo "Corrected cstacks output directory present.  Skipping step.
 $outdircor/cstacks_output
 "
@@ -622,14 +1024,34 @@ echo "Rebuilding catalog with cstacks.
 "
 echo "Rebuilding catalog with cstacks.
 " >> $log
-res2=$(date +%s.%N)
 mkdir -p $outdircor/cstacks_output
 	samp=""
 	for line in `cat $mapfile | cut -f1`; do
 	samp+="-s $outdircor/rxstacks_output/$line "
 	done
-	echo "	cstacks -b 1 -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt" >> $log
-	cstacks -b 1 -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt
+	echo "	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt" >> $log
+	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt
+	fi
+
+	if [[ "$reps" == "yes" ]]; then
+	if [[ -d $outdircor/dereplicated_cstacks_output ]]; then
+echo "Corrected cstacks output directory present (dereplicated data).  Skipping step.
+$outdircor/cstacks_output
+"
+else
+echo "Rebuilding catalog with cstacks (dereplicated data).
+"
+echo "Rebuilding catalog with cstacks (dereplicated data).
+" >> $log
+mkdir -p $outdircor/dereplicated_cstacks_output
+	samp=""
+	for line in `cat $repfile | cut -f1`; do
+	samp+="-s $outdircor/dereplicated_rxstacks_output/$line "
+	done
+	echo "	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/dereplicated_cstacks_output $samp &> $outdircor/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/dereplicated_cstacks_output $samp &> $outdircor/dereplicated_cstacks_output/log_cstacks.txt
+	fi
+	fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -646,7 +1068,9 @@ echo "$runtime
 fi
 
 ## Rerun sstacks
-if [[ -d $outdircor/sstacks_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdircor/sstacks_output || ! -d $outdircor/dereplicated_sstacks_output ]]; then
+	if [[ -d $outdircor/sstacks_output ]]; then
 echo "Corrected sstacks output directory present.  Skipping step.
 $outdircor/sstacks_output
 "
@@ -655,12 +1079,32 @@ echo "Searching cataloged loci for each corrected sample with sstacks.
 "
 echo "Searching cataloged loci for each corrected sample with sstacks.
 " >> $log
-res2=$(date +%s.%N)
 mkdir -p $outdircor/sstacks_output
 	for line in `cat $mapfile | cut -f1`; do
-	echo "	sstacks -b 1 -c $outdircor/cstacks_output/batch_1 -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b 1 -c $outdircor/cstacks_output/batch_1 -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt
+	echo "	sstacks -b ${batch} -c $outdircor/cstacks_output/batch_${batch} -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdircor/cstacks_output/batch_${batch} -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt
 	done
+	fi
+
+	if [[ "$reps" == "yes" ]]; then
+	if [[ -d $outdircor/dereplicated_sstacks_output ]]; then
+echo "Corrected sstacks output directory present.  Skipping step.
+$outdircor/sstacks_output
+"
+else
+echo "Searching cataloged loci for each corrected sample with sstacks
+(dereplicated data).
+"
+echo "Searching cataloged loci for each corrected sample with sstacks
+(dereplicated data).
+" >> $log
+mkdir -p $outdircor/dereplicated_sstacks_output
+	for line in `cat $repfile | cut -f1`; do
+	echo "	sstacks -b ${batch} -c $outdircor/dereplicated_cstacks_output/batch_${batch} -s $outdircor/dereplicated_rxstacks_output/$line -p $cores -o $outdircor/dereplicated_sstacks_output &> $outdircor/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdircor/dereplicated_cstacks_output/batch_${batch} -s $outdircor/dereplicated_rxstacks_output/$line -p $cores -o $outdircor/dereplicated_sstacks_output &> $outdircor/dereplicated_sstacks_output/log_${line}_sstacks.txt
+	done
+	fi
+	fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -677,7 +1121,9 @@ echo "$runtime
 fi
 
 ## Copy all useful outputs to same directory for populations calculations
-if [[ -d $outdircor/stacks_all_output ]]; then
+res2=$(date +%s.%N)
+if [[ ! -d $outdircor/stacks_all_output || ! -d $outdircor/dereplicated_stacks_all_output ]]; then
+	if [[ -d $outdircor/stacks_all_output ]]; then
 echo "Corrected populations output directory present.  Skipping step.
 $outdircor/stacks_all_output
 "
@@ -694,9 +1140,31 @@ for corrected data.
 echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
-res2=$(date +%s.%N)
-	echo "	populations -t $cores -b 1 -P $outdircor/stacks_all_output -M popmap.txt -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b 1 -P $outdircor/stacks_all_output -M popmap.txt -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/stacks_all_output/log_populations.txt
+	fi
+
+## Dereplicated populations
+	if [[ -d $outdircor/dereplicated_stacks_all_output ]]; then
+echo "Corrected populations output directory present.  Skipping step.
+$outdircor/stacks_all_output
+"
+else
+mkdir -p $outdircor/dereplicated_stacks_all_output
+cp $outdircor/dereplicated_rxstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+cp $outdircor/dereplicated_cstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+cp $outdircor/dereplicated_sstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+
+## Rerun populations
+echo "Executing \"populations\" program to produce popgen stats and outputs
+for corrected data (dereplicated data).
+"
+echo "Executing \"populations\" program to produce popgen stats and outputs
+for corrected data (dereplicated data).
+" >> $log
+	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
+	fi
 
 res3=$(date +%s.%N)
 dt=$(echo "$res3 - $res2" | bc)
@@ -722,30 +1190,44 @@ while so be patient.
 "
 echo "adding Stacks output to mysql database.
 " >> $log
-	echo $dbunc > $outdirunc/.mysql_database
-	echo $dbcor > $outdircor/.mysql_database
+	echo $dbunc > $outdirunc/stacks_all_output/.mysql_database 2>/dev/null || true
+	echo $dbcor > $outdircor/stacks_all_output/.mysql_database 2>/dev/null || true
+	echo $dbuncderep > $outdirunc/dereplicated_stacks_all_output/.mysql_database 2>/dev/null || true
+	echo $dbcorderep > $outdircor/dereplicated_stacks_all_output/.mysql_database 2>/dev/null || true
 
 	# drop existing mysql databases in preparation for replacement
 	mysql -e "DROP DATABASE $dbunc" 2>/dev/null || true
 	mysql -e "DROP DATABASE $dbcor" 2>/dev/null || true
+	mysql -e "DROP DATABASE $dbuncderep" 2>/dev/null || true
+	mysql -e "DROP DATABASE $dbcorderep" 2>/dev/null || true
 
 	# create new mysql databases
 	echo "	mysql -e \"CREATE DATABASE $dbunc\"" >> $log
 	mysql -e "CREATE DATABASE $dbunc"
 	echo "	mysql -e \"CREATE DATABASE $dbcor\"" >> $log
 	mysql -e "CREATE DATABASE $dbcor"
+	echo "	mysql -e \"CREATE DATABASE $dbuncderep\"" >> $log
+	mysql -e "CREATE DATABASE $dbuncderep"
+	echo "	mysql -e \"CREATE DATABASE $dbcorderep\"" >> $log
+	mysql -e "CREATE DATABASE $dbcorderep"
+
 	echo "	mysql $dbunc < /usr/local/share/stacks/sql/stacks.sql" >> $log
 	mysql $dbunc < /usr/local/share/stacks/sql/stacks.sql
-	echo "	mysql $dbcor < /usr/local/share/stacks/sql/stacks.sql
-	" >> $log
+	echo "	mysql $dbcor < /usr/local/share/stacks/sql/stacks.sql" >> $log
 	mysql $dbcor < /usr/local/share/stacks/sql/stacks.sql
+	echo "	mysql $dbuncderep < /usr/local/share/stacks/sql/stacks.sql" >> $log
+	mysql $dbuncderep < /usr/local/share/stacks/sql/stacks.sql
+	echo "	mysql $dbcorderep < /usr/local/share/stacks/sql/stacks.sql" >> $log
+	mysql $dbcorderep < /usr/local/share/stacks/sql/stacks.sql
+	echo "" >> $log
 wait
 
+## Loading databases (all samples)
 res2=$(date +%s.%N)
 echo "Loading and indexing uncorrected data.
 "
-echo "	load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e \"$dbname uncorrected output\" -M popmap.txt -c" >> $log
-load_radtags.pl -D $dbunc -b 1 -p $outdirunc/stacks_all_output -B -e "$dbname uncorrected output" -M popmap.txt -c &>/dev/null
+echo "	load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e \"$dbname uncorrected output\" -M $popmap -c" >> $log
+load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e "$dbname uncorrected output" -M $popmap -c &>/dev/null
 echo "	index_radtags.pl -D $dbunc -c -t
 " >> $log
 index_radtags.pl -D $dbunc -c -t &>/dev/null
@@ -768,8 +1250,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing corrected data.
 "
-echo "	load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e \"$dbname corrected output\" -M popmap.txt -c" >> $log
-load_radtags.pl -D $dbcor -b 1 -p $outdircor/stacks_all_output -B -e "$dbname corrected output" -M popmap.txt -c &>/dev/null
+echo "	load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e \"$dbname corrected output\" -M $popmap -c" >> $log
+load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e "$dbname corrected output" -M $popmap -c &>/dev/null
 echo "	index_radtags.pl -D $dbcor -c -t
 " >> $log
 index_radtags.pl -D $dbcor -c -t &>/dev/null
@@ -789,6 +1271,58 @@ echo "$runtime
 echo "Corrected data is ready for viewing.
 "
 wait
+
+## Loading databases (dereplicated)
+if [[ "$reps" == "yes" ]]; then
+res2=$(date +%s.%N)
+echo "Loading and indexing uncorrected data (dereplicated data).
+"
+echo "	load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e \"$dbname uncorrected and dereplicated output\" -M $popmap1 -c" >> $log
+load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e "$dbname uncorrected output" -M $popmap1 -c &>/dev/null
+echo "	index_radtags.pl -D $dbuncderep -c -t
+" >> $log
+index_radtags.pl -D $dbunc -c -t &>/dev/null
+
+res3=$(date +%s.%N)
+dt=$(echo "$res3 - $res2" | bc)
+dd=$(echo "$dt/86400" | bc)
+dt2=$(echo "$dt-86400*$dd" | bc)
+dh=$(echo "$dt2/3600" | bc)
+dt3=$(echo "$dt2-3600*$dh" | bc)
+dm=$(echo "$dt3/60" | bc)
+ds=$(echo "$dt3-60*$dm" | bc)
+
+runtime=`printf "Database load/index runtime (uncorrected data): %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+echo "$runtime
+" >> $log
+echo "Uncorrected data is ready for viewing (dereplicated data).
+"
+wait
+res2=$(date +%s.%N)
+echo "Loading and indexing corrected data (dereplicated data).
+"
+echo "	load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$dbname corrected and dereplicated output\" -M $popmap1 -c" >> $log
+load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$dbname corrected output" -M $popmap1 -c &>/dev/null
+echo "	index_radtags.pl -D $dbcorderep -c -t
+" >> $log
+index_radtags.pl -D $dbcorderep -c -t &>/dev/null
+
+res3=$(date +%s.%N)
+dt=$(echo "$res3 - $res2" | bc)
+dd=$(echo "$dt/86400" | bc)
+dt2=$(echo "$dt-86400*$dd" | bc)
+dh=$(echo "$dt2/3600" | bc)
+dt3=$(echo "$dt2-3600*$dh" | bc)
+dm=$(echo "$dt3/60" | bc)
+ds=$(echo "$dt3-60*$dm" | bc)
+
+runtime=`printf "Database load/index runtime (corrected data): %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+echo "$runtime
+" >> $log
+echo "Corrected data is ready for viewing (dereplicated data).
+"
+wait
+fi
 
 ## Final timing code and exit
 res3=$(date +%s.%N)
