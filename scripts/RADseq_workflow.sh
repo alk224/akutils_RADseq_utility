@@ -31,9 +31,11 @@ fi
 trap finish EXIT
 
 set -e
-scriptdir="$( cd "$( dirname "$0" )" && pwd )"
-configutilitypath=`command -v akutils_config_utility.sh`
-akutilsdir="$( dirname $configutilitypath )"
+
+scriptdir="$(cd "$(dirname "$0")" && pwd)"
+akutilspath=`command -v akutils`
+akutilsscriptdir="$(dirname $akutilspath)"
+akutilsrepodir="$(dirname $akutilsscriptdir)"
 randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
 
 ## Check whether user had supplied -h or --help. If yes display help 
@@ -194,9 +196,9 @@ Referencing local akutils config file.
 $config
 	" >> $log
 	else
-		global_config_count=(`ls $akutilsdir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
+		global_config_count=(`ls $akutilsrepodir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
 		if [[ $global_config_count -ge 1 ]]; then
-		config=`ls $akutilsdir/akutils_resources/akutils*.config`
+		config=`ls $akutilsrepodir/akutils_resources/akutils*.config`
 		echo "Using global akutils config file.
 $config
 		"
@@ -914,12 +916,12 @@ echo "Executing \"populations\" program to produce popgen stats and outputs.
 		if [[ "$analysis" == "denovo" ]]; then
 	echo "	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdirunc/stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdirunc/stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdirunc/stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
 	echo "	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdirunc/stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdirunc/stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/stacks_all_output/log_populations.txt
 		fi
 	fi
 
@@ -949,14 +951,14 @@ echo "Executing \"populations\" program to produce popgen stats and outputs
 (dereplicated data).
 " >> $log
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 	fi
 	fi
@@ -1163,12 +1165,12 @@ echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdircor/stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats &> $outdircor/stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdircor/stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdircor/stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdircor/stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdircor/stacks_all_output/log_populations.txt
 		fi
 	fi
 
@@ -1260,8 +1262,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing uncorrected data.
 "
-echo "	load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e \"$dbname uncorrected output\" -M $popmap -c" >> $log
-load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e "$dbname uncorrected output" -M $popmap -c &>/dev/null
+echo "	load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e \"$dbname uncorrected output\" -M $popmap -c -t population" >> $log
+load_radtags.pl -D $dbunc -b ${batch} -p $outdirunc/stacks_all_output -B -e "$dbname uncorrected output" -M $popmap -c -t population &>/dev/null
 echo "	index_radtags.pl -D $dbunc -c -t
 " >> $log
 index_radtags.pl -D $dbunc -c -t &>/dev/null
@@ -1284,8 +1286,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing corrected data.
 "
-echo "	load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e \"$dbname corrected output\" -M $popmap -c" >> $log
-load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e "$dbname corrected output" -M $popmap -c &>/dev/null
+echo "	load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e \"$dbname corrected output\" -M $popmap -c -t population" >> $log
+load_radtags.pl -D $dbcor -b ${batch} -p $outdircor/stacks_all_output -B -e "$dbname corrected output" -M $popmap -c -t population &>/dev/null
 echo "	index_radtags.pl -D $dbcor -c -t
 " >> $log
 index_radtags.pl -D $dbcor -c -t &>/dev/null
@@ -1311,8 +1313,8 @@ if [[ "$reps" == "yes" ]]; then
 res2=$(date +%s.%N)
 echo "Loading and indexing uncorrected data (dereplicated data).
 "
-echo "	load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e \"$dbname uncorrected and dereplicated output\" -M $popmap1 -c" >> $log
-load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e "$dbname uncorrected output" -M $popmap1 -c &>/dev/null
+echo "	load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e \"$dbname uncorrected and dereplicated output\" -M $popmap1 -c  -t population" >> $log
+load_radtags.pl -D $dbuncderep -b ${batch} -p $outdirunc/dereplicated_stacks_all_output -B -e "$dbname uncorrected output" -M $popmap1 -c  -t population &>/dev/null
 echo "	index_radtags.pl -D $dbuncderep -c -t
 " >> $log
 index_radtags.pl -D $dbunc -c -t &>/dev/null
@@ -1335,8 +1337,8 @@ wait
 res2=$(date +%s.%N)
 echo "Loading and indexing corrected data (dereplicated data).
 "
-echo "	load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$dbname corrected and dereplicated output\" -M $popmap1 -c" >> $log
-load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$dbname corrected output" -M $popmap1 -c &>/dev/null
+echo "	load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$dbname corrected and dereplicated output\" -M $popmap1 -c -t population" >> $log
+load_radtags.pl -D $dbcorderep -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$dbname corrected output" -M $popmap1 -c -t population &>/dev/null
 echo "	index_radtags.pl -D $dbcorderep -c -t
 " >> $log
 index_radtags.pl -D $dbcorderep -c -t &>/dev/null
