@@ -24,14 +24,18 @@
 #
 ## Trap function on exit.
 function finish {
-if [[ -f $mapfile ]]; then
-	rm -r $tempdir
+if [[ -f $stdout ]]; then
+	rm $stdout
+fi
+if [[ -f $stderr ]]; then
+	rm $stderr
 fi
 }
 trap finish EXIT
 
-set -e
+#set -e
 
+## Define variables and directories
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
 	repodir=`dirname $scriptdir`
 	tempdir="$repodir/temp/"
@@ -40,32 +44,22 @@ set -e
 	akutilsscriptdir="$(dirname $akutilspath)"
 	akutilsrepodir="$(dirname $akutilsscriptdir)"
 	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
+	stderr=($repodir/temp/$randcode\_stderr)
+	stdout=($repodir/temp/$randcode\_stdout)
+
+echo $scriptdir
+echo $repodir
+exit 0
 
 ## Check whether user had supplied -h or --help. If yes display help 
 	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-	less $scriptdir/docs/RADseq_workflow.help
+	less $repodir/docs/RADseq_workflow.help
 	exit 0
-	fi 
+	fi
 
 ## If different than 5 or 6 arguments supplied, display usage 
 	if [[  "$#" -le 4 ]] || [[  "$#" -ge 7 ]]; then 
-		echo "
-Usage (order is important):
-RADseq_workflow.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
-
-	<databasename> should NOT include \"_radtags\" suffix
-
-	<read2_fastq> is optional
-
-	<reference> is absolute path to bowtie2-indexed reference or 
-	specify \"denovo\" for denovo analysis
-
-Mapping file must be in the following format:
-Sample1	AAAATTTTCCCCGGGG
-Sample2	ATATTATACGCGGCGC
-
-Where sample names and index sequences are separated by a tab character.
-		"
+		cat $repodir/docs/RADseq_workflow.usage
 		exit 1
 	fi
 

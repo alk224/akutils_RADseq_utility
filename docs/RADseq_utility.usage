@@ -1,0 +1,17 @@
+
+
+Usage (order is important):
+RADseq_utility.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
+
+	<databasename> should NOT include "_radtags" suffix
+
+	<read2_fastq> is optional
+
+	<reference> is absolute path to bowtie2-indexed reference or 
+	specify "denovo" for denovo analysis
+
+Mapping file must be in the following format:
+Sample1	AAAATTTTCCCCGGGG
+Sample2	ATATTATACGCGGCGC
+
+Where sample names and index sequences are separated by a tab character.

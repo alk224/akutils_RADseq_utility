@@ -32,14 +32,11 @@ trap finish EXIT
 
 set -e
 
-	scriptdir="$(cd "$(dirname "$0")" && pwd)"
-	repodir=`dirname $scriptdir`
-	tempdir="$repodir/temp/"
-	workdir=$(pwd)
-	akutilspath=`command -v akutils`
-	akutilsscriptdir="$(dirname $akutilspath)"
-	akutilsrepodir="$(dirname $akutilsscriptdir)"
-	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
+scriptdir="$(cd "$(dirname "$0")" && pwd)"
+akutilspath=`command -v akutils`
+akutilsscriptdir="$(dirname $akutilspath)"
+akutilsrepodir="$(dirname $akutilsscriptdir)"
+randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
 
 ## Check whether user had supplied -h or --help. If yes display help 
 	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
@@ -142,10 +139,13 @@ directory.  Remove or rename one of them and try again.  Exiting.
 ## Define working directory and log file
 	date0=`date +%Y%m%d_%I%M%p`
 	date100=`date -R`
+	workdir=$(pwd)
 	outdir="$workdir/RADseq_workflow_${analysis}"
+	tempdir="$outdir/temp"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
 	if [[ -d $outdir ]]; then
+	mkdir -p $tempdir
 	echo "
 Output directory already exists.  Attempting to use previously generated
 ouputs.
@@ -166,6 +166,7 @@ Command as issued:
 	" >> $log
 	else
 	mkdir -p $outdir
+	mkdir -p $tempdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
 	echo "
