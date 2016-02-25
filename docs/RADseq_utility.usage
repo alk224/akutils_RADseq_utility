@@ -2,17 +2,18 @@
 Usage (order is important):
 RADseq_utility.sh [command] [arguments]
 
-	Commands:	workflow
-			demult-derep
-			db-load
-			db-unload
-			help
+	Commands:	
+		workflow
+		demult-derep
+		db-load
+		db-unload
+		help
 
 	Arguments:
-		workflow	<databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>		
-		demult-derep	
-		db-load		
-		db-unload	
+		workflow	<databasename> <reference>		
+		demult-derep	<mapping_file> <index_read> <read1> <read2>
+		db-load
+		db-unload
 
 RADseq_utility.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
 

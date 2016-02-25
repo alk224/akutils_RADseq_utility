@@ -99,13 +99,13 @@ Or clone the akutils repository at: https://github.com/alk224/akutils-v1.2
 ## If user supplied workflow, then execute workflow script
 	if [[ "$1" == "workflow" ]]; then
 		if [[ -z "$2" ]]; then
-		cat $repodir/docs/workflow.usage
+		cat $repodir/docs/RADseq_workflow.usage
 		exit 0
 		elif [[ "$2" == "help" ]]; then
-		less $repodir/docs/workflow.help
+		less $repodir/docs/RADseq_workflow.help
 		exit 0
 		fi
-	bash $scriptdir/RADseq_workflow.sh $stdout $stderr $randcode $2 $3
+	bash $scriptdir/RADseq_workflow.sh $stdout $stderr $randcode $config $globallocal $2 $3
 	exit 0
 	fi
 

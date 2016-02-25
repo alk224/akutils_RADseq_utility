@@ -24,68 +24,90 @@
 #
 ## Trap function on exit.
 function finish {
-if [[ -f $mapfile ]]; then
-	rm -r $tempdir
+if [[ -f $stdout ]]; then
+	rm -r $stdout
+fi
+if [[ -f $stderr ]]; then
+	rm -r $stderr
+fi
+if [[ -f $filetesttemp ]]; then
+	rm -r $filetesttemp
 fi
 }
 trap finish EXIT
+#set -e
 
-set -e
-
+## Define inputs and working directory
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
 	repodir=`dirname $scriptdir`
 	tempdir="$repodir/temp/"
 	workdir=$(pwd)
-	akutilspath=`command -v akutils`
-	akutilsscriptdir="$(dirname $akutilspath)"
-	akutilsrepodir="$(dirname $akutilsscriptdir)"
-	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
 
-## Check whether user had supplied -h or --help. If yes display help 
-	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-	less $scriptdir/docs/RADseq_workflow.help
-	exit 0
-	fi 
+	stdout=($1)
+	stderr=($2)
+	randcode=($3)
+	config=($4)
+	globallocal=($5)
+	dbname=($6)
+	ref=($7)
+	date0=`date +%Y%m%d_%I%M%p`
+	date100=`date -R`
 
-## If different than 5 or 6 arguments supplied, display usage 
-	if [[  "$#" -le 4 ]] || [[  "$#" -ge 7 ]]; then 
-		echo "
-Usage (order is important):
-RADseq_workflow.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
-
-	<databasename> should NOT include \"_radtags\" suffix
-
-	<read2_fastq> is optional
-
-	<reference> is absolute path to bowtie2-indexed reference or 
-	specify \"denovo\" for denovo analysis
-
-Mapping file must be in the following format:
-Sample1	AAAATTTTCCCCGGGG
-Sample2	ATATTATACGCGGCGC
-
-Where sample names and index sequences are separated by a tab character.
-		"
+## If incorrect number of arguments supplied, display usage
+	if [[ "$#" -ne "7" ]]; then
+		cat $repodir/docs/RADseq_workflow.usage
 		exit 1
 	fi
 
-## Define inputs and working directory
-	dbname=($1)
-	metadatafile=($2)
-	ref=($3)
-	index=($4)
-	read1=($5)
-	read2=($6)
-	issuedcommand="RADseq_workflow.sh $1 $2 $3 $4 $5 $6"
+## If demult-derep output not present, run first
+	if [[ ! -d "demult-derep_output" ]]; then
 
-## Define sequencing mode based on number of supplied inputs
-	if [[ "$#" == 5 ]]; then
-	mode=(single)
-	mode1=(SingleEnd)
-	elif [[ "$#" == 6 ]]; then
-	mode=(paired)
-	mode1=(PairedEnd)
+	# Define map and read files
+	map=$(ls map* 2>/dev/null | head -1)
+	index=$(ls index.fastq 2>/dev/null)
+	read1=$(ls read1.fastq 2>/dev/null)
+	read2=$(ls read2.fastq 2>/dev/null)
+
+	# Test for valid file definitions, exit if necessary
+	filetesttemp="$tempdir/${randcode}_filetest.temp"
+	if [[ ! -z "$map" ]]; then
+		echo "Valid mapfile: $map" > $filetesttemp
+	else
+		echo "No valid mapfile found. (map*)" > $filetesttemp
 	fi
+	if [[ ! -z "$index" ]]; then
+		echo "Valid index: $index" >> $filetesttemp
+	else
+		echo "No valid index file found. (index.fastq)" >> $filetesttemp
+	fi
+	if [[ ! -z "$read1" ]]; then
+		echo "Valid read 1: $read1" >> $filetesttemp
+	else
+		echo "No valid read 1 file found. (read1.fastq)" >> $filetesttemp
+	fi
+	if [[ ! -z "$read2" ]]; then
+		echo "Valid read 2: $read2" >> $filetesttemp
+	else
+		echo "No valid read 2 file found. (read2.fastq)" >> $filetesttemp
+	fi
+		echo "
+Testing for required input files:"
+		cat $filetesttemp
+	if [[ -z "$map" ]] || [[ -z "$index" ]] || [[ -z "$read1" ]]; then
+		echo "
+Missing required input files. Exiting.
+	"
+		exit 1
+	fi
+		echo ""
+		bash $scriptdir/RADseq_demult-derep.sh $stdout $stderr $randcode $config $globallocal $map $index $read1 $read2
+		wait
+	fi
+
+## Define file variables from demult-derep output
+	mapfile="$workdir/demult-derep_output/metadata_file.txt"
+	popmap="$workdir/demult-derep_output/populations_file.txt"
+	repfile="$workdir/demult-derep_output/repfile.txt"
 
 ## Determine analysis mode based user input
 	if [[  "$ref" == "denovo" ]]; then
@@ -96,70 +118,48 @@ Where sample names and index sequences are separated by a tab character.
 	analysis1="Reference-based"
 	fi
 
-## Define database names
-	if [[  "$ref" == "denovo" ]]; then
-	dbunc=(${dbname}_denovo_uncor_radtags)
-	dbuncderep=(${dbname}_denovo_uncor_derep_radtags)
-	dbcor=(${dbname}_denovo_cor_radtags)
-	dbcorderep=(${dbname}_denovo_cor_derep_radtags)
-	else
-	dbunc=(${dbname}_ref_uncor_radtags)
-	dbuncderep=(${dbname}_ref_uncor_derep_radtags)
-	dbcor=(${dbname}_ref_cor_radtags)
-	dbcorderep=(${dbname}_ref_cor_derep_radtags)
-	fi
+## Read sequencing mode from demult-derep output
+	mode1=$(cat demult-derep_output/.sequencing_mode)
 
 ## Batch variable (may need to update for flexibility)
 	batch="1"
 
-## Define working directory and log file
-	date0=`date +%Y%m%d_%I%M%p`
-	date100=`date -R`
+## Define output directory, log file, and database name
 	outdir="$workdir/RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
-	if [[ -d $outdir ]]; then
+	if [[ -d "$outdir" ]]; then
 	echo "
 Output directory already exists.  Attempting to use previously generated
 ouputs.
 	"
 	log=`ls $outdir/log_RADseq_workflow_* | head -1`
-	echo "
-********************************************************************************
-********************************************************************************
-
-RADseq_workflow.sh was rerun.
-$date100
-
-Command as issued:
-	$issuedcommand
-
-********************************************************************************
-********************************************************************************
-	" >> $log
+		if [[ -f "$outdir/.dbname" ]]; then
+		db=$(cat $outdir/.dbname)
+		else
+			if [[  "$ref" == "denovo" ]]; then
+				db=(${dbname}_DENOVO_radtags)
+				echo "$db" > $outdir/.dbname
+			else
+				db=(${dbname}_REFERENCE_radtags)
+				echo "$db" > $outdir/.dbname
+			fi
+		fi
 	else
 	mkdir -p $outdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
-	echo "
-********************************************************************************
-********************************************************************************
-
-RADseq_workflow.sh was run.
-$date100
-
-Command as issued:
-	$issuedcommand
-
-********************************************************************************
-********************************************************************************
-	" >> $log
+		if [[  "$ref" == "denovo" ]]; then
+			db=(${dbname}_DENOVO_radtags)
+			echo "$db" > $outdir/.dbname
+		else
+			db=(${dbname}_REFERENCE_radtags)
+			echo "$db" > $outdir/.dbname
+		fi
 	fi
 
 ## Read in variables from config file
-	local_config_count=(`ls akutils*.config 2>/dev/null | wc -w`)
-	if [[ $local_config_count -ge 1 ]]; then
-	config=`ls akutils*.config`
+	if [[ "$globallocal" == "local" ]]; then
 	echo "Using local akutils config file.
 $config
 	"
@@ -168,9 +168,7 @@ Referencing local akutils config file.
 $config
 	" >> $log
 	else
-		global_config_count=(`ls $akutilsrepodir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
-		if [[ $global_config_count -ge 1 ]]; then
-		config=`ls $akutilsrepodir/akutils_resources/akutils*.config`
+		if [[ "$globallocal" == "global" ]]; then
 		echo "Using global akutils config file.
 $config
 		"
@@ -194,293 +192,7 @@ Analysis type: $analysis1
 CPU cores: $cores
 "
 
-## Parse metadata file contents
-SampleIDcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "SampleID") printf(i) } exit 0}' $metadatafile)
-Indexcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "IndexSequence") printf(i) } exit 0}' $metadatafile)
-Repcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "Rep") printf(i) } exit 0}' $metadatafile)
-Popcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "PopulationID") printf(i) } exit 0}' $metadatafile)
-wait
-
-## Extract data from metadata file
-	#Demultiplexing file
-mapfile="$tempdir/${randcode}_map.temp"
-touch $tempdir/${randcode}_sampleids.temp
-grep -v "#" $metadatafile | cut -f${SampleIDcol} > $tempdir/${randcode}_sampleids.temp
-grep -v "#" $metadatafile | cut -f${Indexcol} > $tempdir/${randcode}_indexes.temp
-grep -v "#" $metadatafile | cut -f${Popcol} > $tempdir/${randcode}_pops.temp
-wait
-paste $tempdir/${randcode}_sampleids.temp $tempdir/${randcode}_indexes.temp > $mapfile
-wait
-
-	if [[ ! -f $mapfile ]]; then
-		echo "Unexpected problem.  Demultiplexing map not generated.
-Exiting.
-		"
-	exit 1
-	fi
-
-	#Dereplication file
-repfile="$tempdir/${randcode}_repids.temp"
-repfile1="$tempdir/${randcode}_repids1.temp"
-awk -v repcol="$Repcol" '$repcol == 1' $metadatafile | cut -f${SampleIDcol} | cut -f1 -d"." > $repfile
-awk -v repcol="$Repcol" '$repcol == 1' $metadatafile > $repfile1
-
-	#Populations file
-popmap="$tempdir/${randcode}_popids.temp"
-popmap1="$tempdir/${randcode}_popids1.temp"
-paste $tempdir/${randcode}_sampleids.temp $tempdir/${randcode}_pops.temp 2>/dev/null > $popmap
-
-	#Populations file for dereplicated data
-cat $repfile1 | cut -f${SampleIDcol} | cut -f1 -d"." > $tempdir/${randcode}_derep_ids.temp
-cat $repfile1 | cut -f${Popcol} | cut -f1 -d"." > $tempdir/${randcode}_derep_pops.temp
-paste $tempdir/${randcode}_derep_ids.temp $tempdir/${randcode}_derep_pops.temp 2>/dev/null > $popmap1
-
-## Demultiplex quality-filtered sequencing data with fastq-multx
-if [[ -d $outdir/demultiplexed_data ]]; then
-echo "Demultiplexing previously completed.  Skipping step.
-$outdir/demultiplexed_data
-"
-else
-echo "Demultiplexing raw data with fastq-multx.
-"
-echo "Demultiplexing raw data with fastq-multx.
-" >> $log
-res2=$(date +%s.%N)
-mkdir -p $outdir/demultiplexed_data
-echo "Demultiplexing command:" >> $log
-	if [[ "$mode" == "single" ]]; then
-	echo "fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
-	" >> $log
-	fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
-	elif [[ "$mode" == "paired" ]]; then
-	echo "fastq-multx -m $multx_errors -B $mapfile $index $read1 $read2 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read1.fq -o $outdir/demultiplexed_data/%.read2.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
-	" >> $log
-	fastq-multx -m $multx_errors -B $mapfile $index $read1 $read2 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read1.fq -o $outdir/demultiplexed_data/%.read2.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
-	fi
-rm $outdir/demultiplexed_data/index.*
-rm $outdir/demultiplexed_data/unmatched*
-
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
-
-runtime=`printf "Demutliplexing runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
-fi
-
-## Dereplicate samples if necessary
-samplecount=$(grep -v "#" $metadatafile 2>/dev/null | wc -l)
-repscount=$(awk -v repcol="$Repcol" '$repcol == 1' $metadatafile 2>/dev/null | wc -l)
-
-	if [[ $samplecount == $repscount ]]; then
-	reps="no"
-	echo "No replicates detected.  Skipping dereplication step.
-	"
-	else
-	reps="yes"
-
-	if [[ -d $outdir/dereplicated_data ]]; then
-	echo "Dereplication previously completed.  Skipping step.
-$outdir/dereplicated_data
-	"
-	else
-	mkdir -p $outdir/dereplicated_data
-
-	for sampleid in `cat $repfile`; do
-		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read1.fq
-		cat $outdir/demultiplexed_data/${sampleid}*read2.fq > $outdir/dereplicated_data/${sampleid}.read2.fq
-	done
-
-	fi
-	fi
-
-## Quality filter sequencing data with fastq-mcf
-if [[ -d $outdir/quality_filtered_data ]]; then
-echo "Quality filtering previously performed.  Skipping step.
-$outdir/quality_filtered_data
-"
-else
-seqlength=$((`sed '2q;d' $read1 | egrep "\w+" | wc -m`-1))
-length=$(echo "$slminpercent*$seqlength" | bc | cut -d. -f1)
-echo "Quality filtering raw data with fastq-mcf.
-Read lengths detected: $seqlength
-Minimum quality threshold: $qual
-Minimum length to retain: $length
-"
-echo "Quality filtering raw data with fastq-mcf.
-Read lengths detected: $seqlength
-Minimum quality threshold: $qual
-Minimum length to retain: $length
-" >> $log
-res2=$(date +%s.%N)
-mkdir -p $outdir/quality_filtered_data
-	if [[ "$mode" == "single" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read.fq -o $outdir/quality_filtered_data/$line.read.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read.fq -o $outdir/quality_filtered_data/$line.read.mcf.fq > $outdir/quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-	fi
-	if [[ "$mode" == "paired" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read1.fq $outdir/demultiplexed_data/$line.read2.fq -o $outdir/quality_filtered_data/$line.read1.mcf.fq -o $outdir/quality_filtered_data/$line.read2.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read1.fq $outdir/demultiplexed_data/$line.read2.fq -o $outdir/quality_filtered_data/$line.read1.mcf.fq -o $outdir/quality_filtered_data/$line.read2.mcf.fq > $outdir/quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-	fi
-wait
-
-	if [[ $reps == "yes" ]]; then
-		if [[ ! -d $outdir/dereplicated_quality_filtered_data ]]; then
-			mkdir -p $outdir/dereplicated_quality_filtered_data
-
-	if [[ "$mode" == "single" ]]; then
-	for line in `cat $repfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-	fi
-	if [[ "$mode" == "paired" ]]; then
-	for line in `cat $repfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-	fi
-wait
-
-		fi
-	fi
-
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
-
-runtime=`printf "Quality filtering runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
-fi
-
-## Join and concatenate separate fastq files (denovo analysis only) ## Stacks is choking on variable length reads. Combine only.
-## Combine separate read files
-res2=$(date +%s.%N)
-if [[ "$analysis" == "denovo" && "$mode" == "paired" ]]; then
-if [[ ! -d $outdir/combined_data || ! -d $outdir/dereplicated_combined_data ]]; then
-	if [[ -d $outdir/combined_data ]]; then
-echo "Combining previously performed.  Skipping step.
-$outdir/combined_data
-"
-else
-echo "Combining read data.
-"
-echo "Combining read data.
-" >> $log
-	mkdir -p $outdir/combined_data
-	for sampleid in `cat $tempdir/${randcode}_sampleids.temp`; do
-	echo "	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq" >> $log
-	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq
-	done
-	echo "" >> $log
-	fi
-
-	if [[ $reps == "yes" ]]; then
-	if [[ -d $outdir/dereplicated_combined_data ]]; then
-echo "Combining previously performed (dereplicated data).  Skipping step.
-$outdir/dereplicated_combined_data
-"
-else
-echo "Combining read data (dereplicated data).
-"
-echo "Combining read data (dereplicated data).
-" >> $log
-	mkdir -p $outdir/dereplicated_combined_data
-	for sampleid in `cat $tempdir/${randcode}_derep_ids.temp`; do
-	echo "	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq" >> $log
-	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq
-	done
-	echo "" >> $log
-	fi
-	fi
-
-#if [[ ! -d $outdir/joined_data || ! -d $outdir/dereplicated_joined_data ]]; then
-#	if [[ -d $outdir/joined_data ]]; then
-#echo "Joining/combining previously performed.  Skipping step.
-#$outdir/joined_data
-#"
-#else
-#echo "Joining read data with fastq-join (-p 10 -m 20).
-#"
-#echo "Joining read data with fastq-join (-p 10 -m 20).
-#" >> $log
-#	mkdir -p $outdir/joined_data
-#	for sampleid in `cat $tempdir/${randcode}_sampleids.temp`; do
-#	echo "	fastq-join -m 20 $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/joined_data/${sampleid}.%.fq &> $outdir/joined_data/${sampleid}.fqjoin.log" >> $log
-#	echo "SampleID: $sampleid" > $outdir/joined_data/${sampleid}.fqjoin.log
-#	fastq-join -m 20 $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/joined_data/${sampleid}.%.fq &>> $outdir/joined_data/${sampleid}.fqjoin.log
-#	cat $outdir/joined_data/${sampleid}.join.fq $outdir/joined_data/${sampleid}.un1.fq $outdir/joined_data/${sampleid}.un2.fq > $outdir/joined_data/${sampleid}.fq
-#	wait
-#	rm $outdir/joined_data/${sampleid}.join.fq $outdir/joined_data/${sampleid}.un1.fq $outdir/joined_data/${sampleid}.un2.fq
-#	done
-#	echo "" >> $log
-#	fi
-
-#	if [[ $reps == "yes" ]]; then
-#	if [[ -d $outdir/dereplicated_joined_data ]]; then
-#echo "Joining/combining previously performed (dereplicated data).  Skipping step.
-#$outdir/dereplicated_joined_data
-#"
-#else
-#echo "Joining read data with fastq-join (dereplicated data, -p 10 -m 20).
-#"
-#echo "Joining read data with fastq-join (dereplicated data, -p 10 -m 20).
-#" >> $log
-#	mkdir -p $outdir/dereplicated_joined_data
-#	for sampleid in `cat $tempdir/${randcode}_derep_ids.temp`; do
-#	echo "	fastq-join -m 20 $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdirdereplicated_/quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/dereplicated_joined_data/${sampleid}.%.fq &> $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log" >> $log
-#	echo "SampleID: $sampleid" > $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log
-#	fastq-join -m 20 $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq -o $outdir/dereplicated_joined_data/${sampleid}.%.fq &>> $outdir/dereplicated_joined_data/${sampleid}.fqjoin.log
-#	cat $outdir/dereplicated_joined_data/${sampleid}.join.fq $outdir/dereplicated_joined_data/${sampleid}.un1.fq $outdir/dereplicated_joined_data/${sampleid}.un2.fq > $outdir/dereplicated_joined_data/${sampleid}.fq
-#	wait
-#	rm $outdir/dereplicated_joined_data/${sampleid}.join.fq $outdir/dereplicated_joined_data/${sampleid}.un1.fq $outdir/dereplicated_joined_data/${sampleid}.un2.fq
-#	done
-#	echo "" >> $log
-#	fi
-#	fi
-
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
-
-runtime=`printf "Read joining runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
-fi
-fi
+###################################################################
 
 ## Align each sample to reference (reference-based analysis only)
 res2=$(date +%s.%N)
@@ -578,130 +290,71 @@ echo "Start of uncorrected analysis steps.
 ## Run pstacks for reference-aligned samples
 res2=$(date +%s.%N)
 if [[ "$analysis" == "reference" ]]; then
-	if [[ ! -d $outdirunc/pstacks_output || ! -d $outdirunc/dereplicated_pstacks_output ]]; then
-		if [[ -d $outdirunc/pstacks_output ]]; then
-echo "Pstacks output directory present.  Skipping step.
-$outdirunc/pstacks_output
-"
-else
-echo "Extracting stacks from sam files with pstacks.
-"
-echo "Extracting stacks from sam files with pstacks.
-" >> $log
-mkdir -p $outdirunc/pstacks_output
-#i=1
-	for line in `cat $mapfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  pstacks -t sam -f $outdir/bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid" >> $log
-	pstacks -t sam -f $outdir/bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid &> $outdirunc/pstacks_output/log_${line}_pstacks.txt
-	#let "i+=1"
-	done
-		fi
+	if [[ ! -d $outdirunc/dereplicated_pstacks_output ]]; then
+	echo "Extracting stacks from sam files with pstacks (dereplicated data).
+	"
+	echo "Extracting stacks from sam files with pstacks (dereplicated data).
+	" >> $log
+	mkdir -p $outdirunc/dereplicated_pstacks_output
+		for line in `cat $repfile | cut -f1`; do
+		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+		echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid" >> $log
+		pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
+		done
 
-		if [[ $reps == "yes" ]]; then
-			if [[ -d $outdirunc/dereplicated_pstacks_output ]]; then
-echo "Pstacks output directory present (dereplicated data).  Skipping step.
+	res3=$(date +%s.%N)
+	dt=$(echo "$res3 - $res2" | bc)
+	dd=$(echo "$dt/86400" | bc)
+	dt2=$(echo "$dt-86400*$dd" | bc)
+	dh=$(echo "$dt2/3600" | bc)
+	dt3=$(echo "$dt2-3600*$dh" | bc)
+	dm=$(echo "$dt3/60" | bc)
+	ds=$(echo "$dt3-60*$dm" | bc)
+
+	runtime=`printf "Pstacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+	echo "$runtime
+	" >> $log
+	else
+	echo "Pstacks output directory present (dereplicated data).  Skipping step.
 $outdirunc/dereplicated_pstacks_output
-"
-else
-echo "Extracting stacks from sam files with pstacks (dereplicated data).
-"
-echo "Extracting stacks from sam files with pstacks (dereplicated data).
-" >> $log
-mkdir -p $outdirunc/dereplicated_pstacks_output
-	for line in `cat $repfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid" >> $log
-	pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
-	done
-			fi
-		fi
-
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
-
-runtime=`printf "Pstacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
+	"
 	fi
 fi
 
 ## Run ustacks for denovo samples
 res2=$(date +%s.%N)
 if [[ "$analysis" == "denovo" ]]; then
-	if [[ ! -d $outdirunc/ustacks_output || ! -d $outdirunc/dereplicated_ustacks_output ]]; then
-		if [[ -d $outdirunc/ustacks_output ]]; then
-echo "Ustacks output directory present.  Skipping step.
-$outdirunc/ustacks_output
-"
-else
-echo "Assembling loci denovo with ustacks.
-"
-echo "Assembling loci denovo with ustacks.
-" >> $log
-mkdir -p $outdirunc/ustacks_output
-			if [[ "$mode" == "single" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
-	ustacks -t fastq -f $outdir/quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
-	done
-			fi
-			if [[ "$mode" == "paired" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  ustacks -t fastq -f $outdir/combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
-	ustacks -t fastq -f $outdir/combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
-	done
-			fi
-		fi
+	if [[ ! -d $outdirunc/dereplicated_ustacks_output ]]; then
+	echo "Assembling loci denovo with ustacks (dereplicated data).
+	"
+	echo "Assembling loci denovo with ustacks (dereplicated data).
+	" >> $log
+	mkdir -p $outdirunc/dereplicated_ustacks_output
 
-		if [[ $reps == "yes" ]]; then
-			if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
-echo "Ustacks output directory present (dereplicated data).  Skipping step.
-$outdirunc/dereplicated_ustacks_output
-"
-else
-echo "Assembling loci denovo with ustacks (dereplicated data).
-"
-echo "Assembling loci denovo with ustacks (dereplicated data).
-" >> $log
-mkdir -p $outdirunc/dereplicated_ustacks_output
-				if [[ "$mode" == "single" ]]; then
-	for line in `cat $repfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  ustacks -t fastq -f $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
-	ustacks -t fastq -f $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
-	done
-				fi
-				if [[ "$mode" == "paired" ]]; then
-	for line in `cat $repfile | cut -f1`; do
-	sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-	echo "  ustacks -t fastq -f $outdir/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
-	ustacks -t fastq -f $outdir/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
-	done
-				fi
-			fi
-		fi
+		for line in `cat $repfile | cut -f1`; do
+		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
+		echo "  ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
+		ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
+		done
 
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
+	res3=$(date +%s.%N)
+	dt=$(echo "$res3 - $res2" | bc)
+	dd=$(echo "$dt/86400" | bc)
+	dt2=$(echo "$dt-86400*$dd" | bc)
+	dh=$(echo "$dt2/3600" | bc)
+	dt3=$(echo "$dt2-3600*$dh" | bc)
+	dm=$(echo "$dt3/60" | bc)
+	ds=$(echo "$dt3-60*$dm" | bc)
 
-runtime=`printf "Ustacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
+	runtime=`printf "Ustacks runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+	echo "$runtime
+	" >> $log
+
+	else
+	echo "Ustacks output directory present (dereplicated data).  Skipping step.
+	$outdirunc/dereplicated_ustacks_output
+	"
+
 	fi
 fi
 

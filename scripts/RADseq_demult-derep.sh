@@ -39,9 +39,6 @@ fi
 if [[ -f $poptemp ]]; then
 	rm -r $poptemp
 fi
-if [[ -f $repfile ]]; then
-	rm -r $repfile
-fi
 if [[ -f $popmap0 ]]; then
 	rm -r $popmap0
 fi
@@ -83,6 +80,18 @@ trap finish EXIT
 	mode1=(PairedEnd)
 	fi
 
+## Check for adapters file or exit
+	adaptest=$(ls adapter* 2>/dev/null | wc -l)
+	if [[ "$adaptest" -ge "1" ]]; then
+	adapters=$(ls adapter* | head -1)
+	else
+	echo "
+No adapter file found. (adapter*)
+Exiting.
+	"
+	exit 1
+	fi
+
 ## Define working directory and log file
 	date0=`date +%Y%m%d_%I%M%p`
 	date100=`date -R`
@@ -98,6 +107,9 @@ trap finish EXIT
 		log="${outdir}/log_demult-derep_${date0}.txt"
 		fi
 	fi
+
+## Write mode to hidden file in output directory
+	echo "$mode1" > $outdir/.sequencing_mode
 
 ## Read in variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
@@ -119,9 +131,8 @@ Sequencing mode detected: $mode1
 ## Parse metadata file contents
 echo "Parsing metadata file contents.
 "
-	metabase=$(basename $metadatafile0)
-	cp $metadatafile0 $outdir
-	metadatafile="$outdir/$metabase"
+	cp $metadatafile0 $outdir/metadata_file.txt
+	metadatafile="$outdir/metadata_file.txt"
 	SampleIDcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "SampleID") printf(i) } exit 0}' $metadatafile)
 	Indexcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "IndexSequence") printf(i) } exit 0}' $metadatafile)
 	Repcol=$(awk '{for(i=1; i<=NF; i++) {if($i == "Rep") printf(i) } exit 0}' $metadatafile)
@@ -150,7 +161,7 @@ your inputs and try again. Exiting.
 	fi
 
 	#Dereplication file
-	repfile="$tempdir/${randcode}_repids.temp"
+	repfile="$outdir/repfile.txt"
 	awk -v repcol="$Repcol" '$repcol == 1' $metadatafile | cut -f${SampleIDcol} | cut -f1 -d"." > $repfile
 
 	#Initial populations file (non-dereplicated)
@@ -165,7 +176,7 @@ your inputs and try again. Exiting.
 	done
 	paste $repfile $popmap1 > $popmap
 
-## Demultiplex quality-filtered sequencing data with fastq-multx
+## Demultiplex sequencing data with fastq-multx
 	if [[ -d $outdir/demultiplexed_data ]]; then
 		echo "Demultiplexing previously completed. Skipping step.
 $outdir/demultiplexed_data
@@ -179,9 +190,9 @@ $outdir/demultiplexed_data
 		mkdir -p $outdir/demultiplexed_data
 		echo "Demultiplexing command:" >> $log
 	if [[ "$mode" == "single" ]]; then
-		echo "fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
+		echo "fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read1.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
 		" >> $log
-		fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
+		fastq-multx -m $multx_errors -B $mapfile $index $read1 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read1.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
 	elif [[ "$mode" == "paired" ]]; then
 		echo "fastq-multx -m $multx_errors -B $mapfile $index $read1 $read2 -o $outdir/demultiplexed_data/index.%.fq -o $outdir/demultiplexed_data/%.read1.fq -o $outdir/demultiplexed_data/%.read2.fq &> $outdir/demultiplexed_data/log_fastq-multx.txt
 		" >> $log
@@ -204,16 +215,16 @@ $outdir/demultiplexed_data
 	" >> $log
 	fi
 
-## Dereplicate samples if necessary
+## Dereplicate samples if necessary (could make a small increase in speed for large datasets by fixing this step)
 samplecount=$(grep -v "#" $metadatafile 2>/dev/null | wc -l)
 repscount=$(awk -v repcol="$Repcol" '$repcol == 1' $metadatafile 2>/dev/null | wc -l)
 
-	if [[ $samplecount == $repscount ]]; then
-	reps="no"
-	echo "No replicates detected. Skipping dereplication step.
-	"
-	else
-	reps="yes"
+#	if [[ $samplecount == $repscount ]]; then
+#	reps="no"
+#	echo "No replicates detected. Skipping dereplication step.
+#	"
+#	else
+#	reps="yes"
 
 	if [[ -d $outdir/dereplicated_data ]]; then
 	echo "Dereplication previously completed. Skipping step.
@@ -224,18 +235,16 @@ $outdir/dereplicated_data
 
 	for sampleid in `cat $repfile`; do
 		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read1.fq
+		if [[ "$mode" == "paired" ]]; then
 		cat $outdir/demultiplexed_data/${sampleid}*read2.fq > $outdir/dereplicated_data/${sampleid}.read2.fq
+		fi
 	done
 
-	fi
+#	fi
 	fi
 
-## Quality filter sequencing data with fastq-mcf
-	if [[ -d $outdir/quality_filtered_data ]]; then
-	echo "Quality filtering previously performed. Skipping step.
-$outdir/quality_filtered_data
-	"
-	else
+## Quality filter dereplicated data with fastq-mcf
+	if [[ ! -d $outdir/dereplicated_quality_filtered_data ]]; then
 	seqlength=$((`sed '2q;d' $read1 | egrep "\w+" | wc -m`-1))
 	length=$(echo "$slminpercent*$seqlength" | bc | cut -d. -f1)
 	echo "Quality filtering raw data with fastq-mcf.
@@ -249,30 +258,8 @@ Minimum quality threshold: $qual
 Minimum length to retain: $length
 	" >> $log
 	res2=$(date +%s.%N)
-	mkdir -p $outdir/quality_filtered_data
-		if [[ "$mode" == "single" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read.fq -o $outdir/quality_filtered_data/$line.read.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read.fq -o $outdir/quality_filtered_data/$line.read.mcf.fq > $outdir/quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-		fi
-		if [[ "$mode" == "paired" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read1.fq $outdir/demultiplexed_data/$line.read2.fq -o $outdir/quality_filtered_data/$line.read1.mcf.fq -o $outdir/quality_filtered_data/$line.read2.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/demultiplexed_data/$line.read1.fq $outdir/demultiplexed_data/$line.read2.fq -o $outdir/quality_filtered_data/$line.read1.mcf.fq -o $outdir/quality_filtered_data/$line.read2.mcf.fq > $outdir/quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
-	done
-		fi
-wait
 
-	if [[ $reps == "yes" ]]; then
-		if [[ ! -d $outdir/dereplicated_quality_filtered_data ]]; then
-			mkdir -p $outdir/dereplicated_quality_filtered_data
+		mkdir -p $outdir/dereplicated_quality_filtered_data
 
 	if [[ "$mode" == "single" ]]; then
 	for line in `cat $repfile | cut -f1`; do
@@ -294,78 +281,55 @@ wait
 	fi
 wait
 
-		fi
-	fi
+	res3=$(date +%s.%N)
+	dt=$(echo "$res3 - $res2" | bc)
+	dd=$(echo "$dt/86400" | bc)
+	dt2=$(echo "$dt-86400*$dd" | bc)
+	dh=$(echo "$dt2/3600" | bc)
+	dt3=$(echo "$dt2-3600*$dh" | bc)
+	dm=$(echo "$dt3/60" | bc)
+	ds=$(echo "$dt3-60*$dm" | bc)
 
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
+	runtime=`printf "Quality filtering runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+	echo "$runtime
+	" >> $log
 
-runtime=`printf "Quality filtering runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
+	else
+	echo "Quality filtering previously performed. Skipping step.
+$outdir/quality_filtered_data
+	"
 fi
 
 ## Join and concatenate separate fastq files (denovo analysis only) ## Stacks is choking on variable length reads. Combine only.
 ## Combine separate read files
-res2=$(date +%s.%N)
-if [[ "$analysis" == "denovo" && "$mode" == "paired" ]]; then
-if [[ ! -d $outdir/combined_data || ! -d $outdir/dereplicated_combined_data ]]; then
-	if [[ -d $outdir/combined_data ]]; then
-echo "Combining previously performed. Skipping step.
-$outdir/combined_data
-"
-else
-echo "Combining read data.
-"
-echo "Combining read data.
-" >> $log
-	mkdir -p $outdir/combined_data
-	for sampleid in `cat $tempdir/${randcode}_sampleids.temp`; do
-	echo "	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq" >> $log
-	cat $outdir/quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/combined_data/${sampleid}.fq
-	done
-	echo "" >> $log
-	fi
-
-	if [[ $reps == "yes" ]]; then
-	if [[ -d $outdir/dereplicated_combined_data ]]; then
-echo "Combining previously performed (dereplicated data). Skipping step.
-$outdir/dereplicated_combined_data
-"
-else
+	res2=$(date +%s.%N)
+	if [[ ! -d $outdir/dereplicated_combined_data ]]; then
 echo "Combining read data (dereplicated data).
 "
 echo "Combining read data (dereplicated data).
 " >> $log
 	mkdir -p $outdir/dereplicated_combined_data
-	for sampleid in `cat $tempdir/${randcode}_derep_ids.temp`; do
-	echo "	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq" >> $log
-	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.read1.mcf.fq $outdir/dereplicated_quality_filtered_data/${sampleid}.read2.mcf.fq > $outdir/dereplicated_combined_data/${sampleid}.fq
+	for sampleid in `cat $repfile`; do
+	echo "	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.*.fq > $outdir/dereplicated_combined_data/${sampleid}.fq" >> $log
+	cat $outdir/dereplicated_quality_filtered_data/${sampleid}.*.fq > $outdir/dereplicated_combined_data/${sampleid}.fq
 	done
 	echo "" >> $log
+
+	res3=$(date +%s.%N)
+	dt=$(echo "$res3 - $res2" | bc)
+	dd=$(echo "$dt/86400" | bc)
+	dt2=$(echo "$dt-86400*$dd" | bc)
+	dh=$(echo "$dt2/3600" | bc)
+	dt3=$(echo "$dt2-3600*$dh" | bc)
+	dm=$(echo "$dt3/60" | bc)
+	ds=$(echo "$dt3-60*$dm" | bc)
+
+	runtime=`printf "Read combining runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
+	echo "$runtime
+	" >> $log
+	else
+echo "Combining previously performed (dereplicated data). Skipping step.
+$outdir/combined_data
+"
 	fi
-	fi
-
-
-
-res3=$(date +%s.%N)
-dt=$(echo "$res3 - $res2" | bc)
-dd=$(echo "$dt/86400" | bc)
-dt2=$(echo "$dt-86400*$dd" | bc)
-dh=$(echo "$dt2/3600" | bc)
-dt3=$(echo "$dt2-3600*$dh" | bc)
-dm=$(echo "$dt3/60" | bc)
-ds=$(echo "$dt3-60*$dm" | bc)
-
-runtime=`printf "Read combining runtime: %d days %02d hours %02d minutes %02.1f seconds\n" $dd $dh $dm $ds`
-echo "$runtime
-" >> $log
-fi
-fi
 
