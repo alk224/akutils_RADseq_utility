@@ -1,0 +1,41 @@
+## Command autocompletion file for akutils RADseq utility
+
+_RADseq_utility()
+{
+  local cur prev opts base
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+  ## Basic options to autocomplete
+  opts="demult-derep workflow db-load db-unload help
+        "
+
+  ## Complete available RADseq_utility command arguments
+  case $prev in
+	RADseq_utility)
+	  COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+	  ;;
+
+  ## Complete options to some of the commands
+	workflow)
+	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+	demult-derep)
+	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+	db-load)
+	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+	db-unload)
+	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+
+  esac
+  return 0
+}
+complete -o default -F _RADseq_utility RADseq_utility
