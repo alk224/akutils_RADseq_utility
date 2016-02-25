@@ -1,0 +1,4 @@
+
+There are at least two files containing adapter sequences in your local
+directory.  Remove or rename one of them and try again.  Exiting.
+

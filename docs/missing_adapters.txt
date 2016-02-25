@@ -1,0 +1,13 @@
+
+No adapter file found in local directory.  Please copy a file containing
+your adapter sequences to the local directory and try again.  The file
+must contain reverse complements to the adapter sequences as they will
+be read from the opposing strand.  Exiting.
+
+Example file (fasta format):
+
+>P1
+CATAGCATCGCTTACTGGCTCTCCACATAGG
+>P2
+CTGACTTGGGTAATCGCAGTAGTGAGCGTTGAC
+

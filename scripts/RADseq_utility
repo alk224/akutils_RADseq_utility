@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-#  Stacks workflow - process raw RADseq data all the way through Stacks pipline
+#  RADseq_utility - master script for processing raw RADseq data all the way through Stacks pipline
 #
-#  Version 1.1.0 (June 16, 2015)
+#  Version 0.9 (February 25, 2016)
 #
-#  Copyright (c) 2014-2015 Andrew Krohn
+#  Copyright (c) 2015-2016 Andrew Krohn
 #
 #  This software is provided 'as-is', without any express or implied
 #  warranty. In no event will the authors be held liable for any damages
@@ -24,71 +24,134 @@
 #
 ## Trap function on exit.
 function finish {
-if [[ -f $mapfile ]]; then
-	rm -r $tempdir
+if [[ -f $stdout ]]; then
+	rm $stdout
+fi
+if [[ -f $stderr ]]; then
+	rm $stderr
 fi
 }
 trap finish EXIT
 
-set -e
+#set -e
 
-scriptdir="$(cd "$(dirname "$0")" && pwd)"
-akutilspath=`command -v akutils`
-akutilsscriptdir="$(dirname $akutilspath)"
-akutilsrepodir="$(dirname $akutilsscriptdir)"
-randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
+## Define variables and directories
+	scriptdir="$(cd "$(dirname "$0")" && pwd)"
+	repodir=`dirname $scriptdir`
+	tempdir="$repodir/temp/"
+	workdir=$(pwd)
+	akutilspath=`command -v akutils`
+	akutilsscriptdir="$(dirname $akutilspath)"
+	akutilsrepodir="$(dirname $akutilsscriptdir)"
+	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
+	stderr=($repodir/temp/$randcode\_stderr)
+	stdout=($repodir/temp/$randcode\_stdout)
 
 ## Check whether user had supplied -h or --help. If yes display help 
-	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-	less $scriptdir/docs/RADseq_workflow.help
+	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "help" ]]; then
+		less $repodir/docs/RADseq_utility.help
+		exit 0
+	fi
+
+## Locate config file
+	local_config_count=(`ls akutils*.config 2>/dev/null | wc -w`)
+	if [[ $local_config_count -ge 1 ]]; then
+	config=`ls akutils*.config`
+	globallocal="local"
+	else
+		global_config_count=(`ls $akutilsrepodir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
+		if [[ $global_config_count -ge 1 ]]; then
+		config=`ls $akutilsrepodir/akutils_resources/akutils*.config`
+		globallocal="global"
+		fi
+	fi
+	if [[ -z "$config" ]]; then
+		echo "
+No config file found. Need to run the akutils config utility before this script
+can be accessed.
+
+Execute: akutils configure
+
+Or clone the akutils repository at: https://github.com/alk224/akutils-v1.2
+		"
+	fi
+
+## Read variables from config file
+	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
+	threads=$(expr $cores + 1)
+	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
+	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
+	slminpercent=(`grep "Split_libraries_minpercent" $config | grep -v "#" | cut -f 2`)
+
+## If user supplied demult-derep, then execute demult-derep script
+	if [[ "$1" == "demult-derep" ]]; then
+		if [[ -z "$2" ]]; then
+		cat $repodir/docs/demult-derep.usage
+		exit 0
+		elif [[ "$2" == "help" ]]; then
+		less $repodir/docs/demult-derep.help
+		exit 0
+		fi
+	bash $scriptdir/RADseq_demult-derep.sh $stdout $stderr $randcode $config $globallocal $2 $3 $4 $5
 	exit 0
-	fi 
+	fi
+
+## If user supplied workflow, then execute workflow script
+	if [[ "$1" == "workflow" ]]; then
+		if [[ -z "$2" ]]; then
+		cat $repodir/docs/workflow.usage
+		exit 0
+		elif [[ "$2" == "help" ]]; then
+		less $repodir/docs/workflow.help
+		exit 0
+		fi
+	bash $scriptdir/RADseq_workflow.sh $stdout $stderr $randcode $2 $3
+	exit 0
+	fi
+
+## If user supplied db-load, then execute db-load script
+	if [[ "$1" == "db-load" ]]; then
+		if [[ -z "$2" ]]; then
+		cat $repodir/docs/db-load.usage
+		exit 0
+		elif [[ "$2" == "help" ]]; then
+		less $repodir/docs/db-load.help
+		exit 0
+		fi
+	bash $scriptdir/db-load.sh $stdout $stderr $randcode $2 $3
+	exit 0
+	fi
+
+## If user supplied db-unload, then execute db-unload script
+	if [[ "$1" == "db-unload" ]]; then
+		if [[ -z "$2" ]]; then
+		cat $repodir/docs/db-unload.usage
+		exit 0
+		elif [[ "$2" == "help" ]]; then
+		less $repodir/docs/db-unload.help
+		exit 0
+		fi
+	bash $scriptdir/db-unload.sh $stdout $stderr $randcode $2 $3
+	exit 0
+	fi
+
+
 
 ## If different than 5 or 6 arguments supplied, display usage 
-	if [[  "$#" -le 4 ]] || [[  "$#" -ge 7 ]]; then 
-		echo "
-Usage (order is important):
-RADseq_workflow.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
-
-	<databasename> should NOT include \"_radtags\" suffix
-
-	<read2_fastq> is optional
-
-	<reference> is absolute path to bowtie2-indexed reference or 
-	specify \"denovo\" for denovo analysis
-
-Mapping file must be in the following format:
-Sample1	AAAATTTTCCCCGGGG
-Sample2	ATATTATACGCGGCGC
-
-Where sample names and index sequences are separated by a tab character.
-		"
+	if [[ "$#" -le 4 ]] || [[ "$#" -ge 7 ]]; then 
+		cat $repodir/docs/RADseq_utility.usage
 		exit 1
 	fi
 
 ## Check for presence of adapters file in local directory
 	adaptercount=`ls adapter* 2>/dev/null | wc -w`
 	if [[ $adaptercount == "0" ]]; then
-	echo "
-No adapter file found in local directory.  Please copy a file containing
-your adapter sequences to the local directory and try again.  The file
-must contain reverse complements to the adapter sequences as they will
-be read from the opposing strand.  Exiting.
-
-Example file (fasta format):
-
->P1
-CATAGCATCGCTTACTGGCTCTCCACATAGG
->P2
-CTGACTTGGGTAATCGCAGTAGTGAGCGTTGAC
-	"
+		cat $repodir/docs/missing_adapters.txt
+		exit 1
 	exit 1
 	elif [[ $adaptercount -ge "2" ]]; then
-	echo "
-There are at least two files containing adapter sequences in your local
-directory.  Remove or rename one of them and try again.  Exiting.
-	"
-	exit 1
+		cat $repodir/docs/excess_adapters.txt
+		exit 1
 	else
 	adapters=`ls adapter*`
 	fi
@@ -100,7 +163,7 @@ directory.  Remove or rename one of them and try again.  Exiting.
 	index=($4)
 	read1=($5)
 	read2=($6)
-	issuedcommand="RADseq_workflow.sh $1 $2 $3 $4 $5 $6"
+	issuedcommand="RADseq_utility.sh $1 $2 $3 $4 $5 $6"
 
 ## Define sequencing mode based on number of supplied inputs
 	if [[ "$#" == 5 ]]; then
@@ -120,17 +183,17 @@ directory.  Remove or rename one of them and try again.  Exiting.
 	analysis1="Reference-based"
 	fi
 
-## Define database names
+## Define database names (will probably remove uncorrected and non-dereplicated versions eventually)
 	if [[  "$ref" == "denovo" ]]; then
-	dbunc=(${dbname}_denovo_uncor_radtags)
-	dbuncderep=(${dbname}_denovo_uncor_derep_radtags)
-	dbcor=(${dbname}_denovo_cor_radtags)
-	dbcorderep=(${dbname}_denovo_cor_derep_radtags)
+	#dbunc=(${dbname}_denovo_uncor_radtags)
+	#dbuncderep=(${dbname}_denovo_uncor_derep_radtags)
+	#dbcor=(${dbname}_denovo_cor_radtags)
+	dbcorderep=(${dbname}_DENOVO_radtags)
 	else
-	dbunc=(${dbname}_ref_uncor_radtags)
-	dbuncderep=(${dbname}_ref_uncor_derep_radtags)
-	dbcor=(${dbname}_ref_cor_radtags)
-	dbcorderep=(${dbname}_ref_cor_derep_radtags)
+	#dbunc=(${dbname}_ref_uncor_radtags)
+	#dbuncderep=(${dbname}_ref_uncor_derep_radtags)
+	#dbcor=(${dbname}_ref_cor_radtags)
+	dbcorderep=(${dbname}_REFERENCE_radtags)
 	fi
 
 ## Batch variable (may need to update for flexibility)
@@ -139,13 +202,10 @@ directory.  Remove or rename one of them and try again.  Exiting.
 ## Define working directory and log file
 	date0=`date +%Y%m%d_%I%M%p`
 	date100=`date -R`
-	workdir=$(pwd)
-	outdir="$workdir/RADseq_workflow_${analysis}"
-	tempdir="$outdir/temp"
+	outdir="$workdir/RADseq_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
 	if [[ -d $outdir ]]; then
-	mkdir -p $tempdir
 	echo "
 Output directory already exists.  Attempting to use previously generated
 ouputs.
@@ -166,7 +226,6 @@ Command as issued:
 	" >> $log
 	else
 	mkdir -p $outdir
-	mkdir -p $tempdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
 	echo "
@@ -183,37 +242,6 @@ Command as issued:
 ********************************************************************************
 	" >> $log
 	fi
-
-## Read in variables from config file
-	local_config_count=(`ls akutils*.config 2>/dev/null | wc -w`)
-	if [[ $local_config_count -ge 1 ]]; then
-	config=`ls akutils*.config`
-	echo "Using local akutils config file.
-$config
-	"
-	echo "
-Referencing local akutils config file.
-$config
-	" >> $log
-	else
-		global_config_count=(`ls $akutilsrepodir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
-		if [[ $global_config_count -ge 1 ]]; then
-		config=`ls $akutilsrepodir/akutils_resources/akutils*.config`
-		echo "Using global akutils config file.
-$config
-		"
-		echo "
-Referencing global akutils config file.
-$config
-		" >> $log
-		fi
-	fi
-
-	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
-	threads=$(expr $cores + 1)
-	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
-	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
-	slminpercent=(`grep "Split_libraries_minpercent" $config | grep -v "#" | cut -f 2`)
 
 res0=$(date +%s.%N)
 echo "RADseq workflow beginning.

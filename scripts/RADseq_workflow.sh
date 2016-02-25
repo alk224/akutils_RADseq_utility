@@ -69,33 +69,6 @@ Where sample names and index sequences are separated by a tab character.
 		exit 1
 	fi
 
-## Check for presence of adapters file in local directory
-	adaptercount=`ls adapter* 2>/dev/null | wc -w`
-	if [[ $adaptercount == "0" ]]; then
-	echo "
-No adapter file found in local directory.  Please copy a file containing
-your adapter sequences to the local directory and try again.  The file
-must contain reverse complements to the adapter sequences as they will
-be read from the opposing strand.  Exiting.
-
-Example file (fasta format):
-
->P1
-CATAGCATCGCTTACTGGCTCTCCACATAGG
->P2
-CTGACTTGGGTAATCGCAGTAGTGAGCGTTGAC
-	"
-	exit 1
-	elif [[ $adaptercount -ge "2" ]]; then
-	echo "
-There are at least two files containing adapter sequences in your local
-directory.  Remove or rename one of them and try again.  Exiting.
-	"
-	exit 1
-	else
-	adapters=`ls adapter*`
-	fi
-
 ## Define inputs and working directory
 	dbname=($1)
 	metadatafile=($2)

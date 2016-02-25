@@ -1,6 +1,19 @@
 
-
 Usage (order is important):
+RADseq_utility.sh [command] [arguments]
+
+	Commands:	workflow
+			demult-derep
+			db-load
+			db-unload
+			help
+
+	Arguments:
+		workflow	<databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>		
+		demult-derep	
+		db-load		
+		db-unload	
+
 RADseq_utility.sh <databasename> <sample mapping file> <reference> <index_fastq> <read1_fastq> <read2_fastq>
 
 	<databasename> should NOT include "_radtags" suffix
@@ -15,3 +28,4 @@ Sample1	AAAATTTTCCCCGGGG
 Sample2	ATATTATACGCGGCGC
 
 Where sample names and index sequences are separated by a tab character.
+

@@ -1,0 +1,6 @@
+
+Usage (order is important):
+RADseq_utility.sh demult-derep <mapping_file> <index_read> <read1> <read2>
+
+	<read2> is optional
+
