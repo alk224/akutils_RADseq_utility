@@ -33,50 +33,69 @@ fi
 }
 trap finish EXIT
 
-#set -e
-
-## Define variables and directories
+## Find scripts and repository location.
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
 	repodir=`dirname $scriptdir`
 	tempdir="$repodir/temp/"
+
+## Set working directory and other important variables
 	workdir=$(pwd)
-	akutilspath=`command -v akutils`
-	akutilsscriptdir="$(dirname $akutilspath)"
-	akutilsrepodir="$(dirname $akutilsscriptdir)"
 	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
 	stderr=($repodir/temp/$randcode\_stderr)
 	stdout=($repodir/temp/$randcode\_stdout)
 
+## Usage and help
+	usage="$repodir/docs/RADseq_utility.usage"
+	help="$repodir/docs/RADseq_utility.help"
+
 ## Check whether user had supplied -h or --help. If yes display help 
 	if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "help" ]]; then
-		less $repodir/docs/RADseq_utility.help
+		less $help
 		exit 0
 	fi
 
-## Locate config file
-	local_config_count=(`ls akutils*.config 2>/dev/null | wc -w`)
-	if [[ $local_config_count -ge 1 ]]; then
-	config=`ls akutils*.config`
-	globallocal="local"
-	else
-		global_config_count=(`ls $akutilsrepodir/akutils_resources/akutils*.config 2>/dev/null | wc -w`)
-		if [[ $global_config_count -ge 1 ]]; then
-		config=`ls $akutilsrepodir/akutils_resources/akutils*.config`
+## Find config file and run config utility if necessary
+	globalconfigsearch=(`ls $repodir/resources/akutils_RADseq.global.config 2>/dev/null`)
+	localconfigsearch=(`ls akutils_RADseq*.config 2>/dev/null`)
+	if [[ -f "$localconfigsearch" ]]; then
+		configfile="$localconfigsearch"
+		globallocal="local"
+	elif [[ -f "$globalconfigsearch" ]]; then
+		configfile="$globalconfigsearch"
 		globallocal="global"
-		fi
-	fi
-	if [[ -z "$config" ]]; then
-		echo "
-No config file found. Need to run the akutils config utility before this script
-can be accessed.
-
-Execute: akutils configure
-
-Or clone the akutils repository at: https://github.com/alk224/akutils-v1.2
-		"
+	else
+	echo "
+No config file is present.  Running config utility to establish configurable
+options.
+	"
+	bash $scriptdir/configure_slave.sh $stdout $stderr $randcode
+	exit 0
 	fi
 
-## Read variables from config file
+## Check whether user supplied print_config.  If yes, list config options.
+	if [[ "$1" == "print_config" ]]; then
+	bash $scriptdir/readconfig_slave.sh $configfile $globallocal $stdout $stderr $randcode
+	exit 0
+	fi
+
+## Check whether user supplied configure.  If yes, run config utility.
+	if [[ "$1" == "configure" ]]; then
+	if [[ "$#" == "1" ]]; then
+	bash $scriptdir/configure_slave.sh $stdout $stderr $randcode
+	exit 0
+	elif [[ "$2" == "help" ]]; then
+	less $repodir/docs/configure.help
+	exit 0
+	elif [[ "$#" == "3" ]]; then
+	bash $scriptdir/configure_setting_slave.sh $stdout $stderr $randcode $2 $3
+	exit 0
+	fi
+	fi
+
+####################
+####################
+## CONSIDER DELETING
+## Read variables from config file -- might be able to delete the section here
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	threads=$(expr $cores + 1)
 	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
@@ -135,13 +154,22 @@ Or clone the akutils repository at: https://github.com/alk224/akutils-v1.2
 	exit 0
 	fi
 
-
-
 ## If different than 5 or 6 arguments supplied, display usage 
 	if [[ "$#" -le 4 ]] || [[ "$#" -ge 7 ]]; then 
 		cat $repodir/docs/RADseq_utility.usage
 		exit 1
 	fi
+
+## Display usage for non-parseable command.
+	cat $usage
+
+exit 0
+
+####################################
+####################################
+## POSSIBLE END OF FILE
+####################################
+####################################
 
 ## Check for presence of adapters file in local directory
 	adaptercount=`ls adapter* 2>/dev/null | wc -w`
