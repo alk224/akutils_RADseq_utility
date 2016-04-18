@@ -64,7 +64,7 @@ Exiting.
 
 ## Offer to exit before changing setting
 	echo "
-Change akutils RADseq variable setting in your ${bold}${globallocal}${normal} config file.
+Change akutils RADseq utility variable setting in your ${bold}${globallocal}${normal} config file.
 Config file: ${config}
 Variable: ${bold}${variable}${normal}
 Description: $description
