@@ -8,7 +8,7 @@ _RADseq_utility()
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
   ## Basic options to autocomplete
-  opts="demult-derep workflow db-load db-unload help
+  opts="demult-derep workflow db-load db-unload help configure print_config
         "
 
   ## Complete available RADseq_utility command arguments
@@ -32,6 +32,14 @@ _RADseq_utility()
 	  ;;
 	db-unload)
 	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+	configure)
+	  local sub="CPU_cores Qual_score Multx_errors Batch_ID
+		Min_depth Max_stacks_dist Max_dist_align Removal_alg
+		Deleverage_alg Duplicate_match Tag_mismatches
+		Catalog_match
+		help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;
 
