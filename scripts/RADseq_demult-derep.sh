@@ -114,9 +114,9 @@ Exiting.
 ## Read in variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	threads=$(expr $cores + 1)
-	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
+	qual=(`grep "Qual_score" $config | grep -v "#" | cut -f 2`)
 	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
-	slminpercent=(`grep "Split_libraries_minpercent" $config | grep -v "#" | cut -f 2`)
+	slminpercent="0.95"
 
 ## Log demult-derep start
 	res0=$(date +%s.%N)
