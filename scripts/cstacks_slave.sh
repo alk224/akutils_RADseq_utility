@@ -61,7 +61,6 @@ trap finish EXIT
 		if [[ "$Catalog_match" == "GENOMIC" ]]; then
 			catmat="-g"
 		fi
-	Allowed_mismatches=(`grep "Allowed_mismatches" $config | grep -v "#" | cut -f 2`)
 
 ## Cstacks command
 	mcfcount=`ls $outdirunc/dereplicated_ustacks_output/*mcf* 2>/dev/null | wc -l`
@@ -78,15 +77,15 @@ mkdir -p $outdirunc/dereplicated_cstacks_output
 	for line in `cat $repfile | cut -f1`; do
 	samp+="-s $outdirunc/dereplicated_pstacks_output/$line "
 	done
-	echo "	cstacks $catmat -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks $catmat -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
 			fi
 			if [[ "$analysis" == "denovo" ]]; then
 	for line in `cat $repfile | cut -f1`; do
 	samp+="-s $outdirunc/dereplicated_ustacks_output/$line "
 	done
-	echo "	cstacks -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
 			fi
 
 exit 0

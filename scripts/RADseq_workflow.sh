@@ -116,6 +116,7 @@ Missing required input files. Exiting.
 
 ## Define output directory, log file, and database name
 	outdir="$workdir/RADseq_workflow_${analysis}"
+	outdirname="RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
 	if [[ -d "$outdir" ]]; then
@@ -195,6 +196,8 @@ $config
 		if [[ "$Catalog_match" == "GENOMIC" ]]; then
 			catmat="-g"
 		fi
+	Load_mysql=(`grep "Load_mysql" $config | grep -v "#" | cut -f 2`)
+	Compress_output=(`grep "Compress_output" $config | grep -v "#" | cut -f 2`)
 
 res0=$(date +%s.%N)
 echo "RADseq workflow beginning.
@@ -426,9 +429,44 @@ for corrected data.
 	fi
 
 
+###################################
+## Add results to mysql database ##
+###################################
 
+	if [[ "$Load_mysql" == "NO" ]]; then
+	echo "Database will not be loaded to MySql according to your configuration settings.
+Workflow processing complete.
+	"
+	echo "Database will not be loaded to MySql according to your configuration settings.
+Workflow processing complete.
+	" >> $log
+	if [[ "$Compress_output" == "YES" ]]; then
+	ipad=$(dig +short myip.opendns.com @resolver1.opendns.com)
+	if [[ ! -f ${outdirname}.tar.gz ]]; then
+	echo "Compressing output for download (.tar.gz format).
+Please be patient.
+"
+	echo "Compressing output for download (.tar.gz format).
+" >> $log
+	tar -czvf ${outdirname}.tar.gz $outdir &>/dev/null
+	echo "Compression complete."
+	else "Compressed output already present.
+	"
+	fi
+	echo "Use the following command to transfer the output to
+your local home directory (use a terminal window not connected to a server):
 
+scp ${USER}@${ipad}:${outdir}.tar.gz ./
+"
+	fi
+	exit 0
+	fi
 
+	if [[ "$Load_mysql" == "YES" ]]; then
+	
+	## Add load-db command here
+
+	fi
 
 
 

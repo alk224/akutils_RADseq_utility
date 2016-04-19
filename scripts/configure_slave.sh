@@ -207,7 +207,8 @@ Reading configurable fields...
 I will now go through each configurable field and require your input. Press enter
 to retain the current value or enter a new value. When entering paths (say, to
 greengenes database) use absolute path and remember to use tab-autocomplete to
-avoid errors.
+avoid errors. Settings are cap-sensitive and must be entered correctly, or you
+may experience errors with your workflow.
 	"
 
 for field in `grep -v "#" $configfile | cut -f 1`; do
