@@ -214,14 +214,44 @@ CPU cores: $cores
 echo "Alignments previously performed.  Skipping step.
 $outdir/bowtie2_alignments
 "
+echo "Alignments previously performed.  Skipping step.
+$outdir/bowtie2_alignments
+" >> $log
 	else
+echo "Aligning sequence data to supplied reference sequence.
+$ref
+"
+echo "Aligning sequence data to supplied reference sequence.
+$ref
+" >> $log
 		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $configfile $ref $outdir $mode $mapfile $threads
 	fi
 	fi
 
+###################################
+## START OF UNCORRECTED ANALYSIS ##
+###################################
+echo "Start of uncorrected analysis steps.
+"
+echo "Start of uncorrected analysis steps.
+" >> $log
 
-
-
+## Run pstacks for reference-based analysis
+	res2=$(date +%s.%N)
+	if [[ "$analysis" == "reference" ]]; then
+	if [[ -d $outdirunc/dereplicated_pstacks_output ]]; then
+	echo "Pstacks step already completed. Skipping step.
+$outdirunc/dereplicated_pstacks_output"
+	echo "Pstacks step already completed. Skipping step.
+$outdirunc/dereplicated_pstacks_output" >> $log
+	else
+	echo "Extracting stacks from sam files with pstacks.
+	"
+	echo "Extracting stacks from sam files with pstacks.
+	" >> $log
+		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
+	fi
+	fi
 
 
 
