@@ -287,13 +287,12 @@ $outdirunc/dereplicated_cstacks_output
 		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
 	fi
 
-## Search individual stacks against population catalog
-## Need variables to manage batch IDs and catalog names
+## Search individual stacks against population catalog (sstacks)
 	res2=$(date +%s.%N)
 	if [[ -d $outdirunc/dereplicated_sstacks_output ]]; then
-	echo "Sstacks output directory present.  Skipping step.
+	echo "Sstacks output directory present. Skipping step.
 $outdirunc/dereplicated_sstacks_output"
-	echo "Sstacks output directory present.  Skipping step.
+	echo "Sstacks output directory present. Skipping step.
 $outdirunc/dereplicated_sstacks_output" >> $log
 	else
 	echo "Searching cataloged loci for each sample with sstacks.
@@ -303,7 +302,37 @@ $outdirunc/dereplicated_sstacks_output" >> $log
 		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
 	fi
 
+## Copy all useful outputs to same directory for populations calculations
+	res2=$(date +%s.%N)
+	if [[ -d $outdirunc/dereplicated_stacks_all_output ]]; then
+	echo "Populations output directory present. Skipping step.
+$outdirunc/dereplicated_stacks_all_output"
+	echo "Populations output directory present. Skipping step.
+$outdirunc/dereplicated_stacks_all_output" >> $log
+	else
+	echo "Copying all output to new directory for populations calculations.
+$outdirunc/dereplicated_stacks_all_output
+"
+	echo "Copying all output to new directory for populations calculations.
+$outdirunc/dereplicated_stacks_all_output
+" >> $log
+	mkdir -p $outdirunc/dereplicated_stacks_all_output
+		if [[ "$analysis" == "denovo" ]]; then
+		cp $outdirunc/dereplicated_ustacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		fi
+		if [[ "$analysis" == "reference" ]]; then
+		cp $outdirunc/dereplicated_pstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		fi
+		cp $outdirunc/dereplicated_cstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		cp $outdirunc/dereplicated_sstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
 
+## Run populations program to generate popgen stats plus various outputs
+	echo "Executing \"populations\" program to produce popgen stats and outputs.
+"
+	echo "Executing \"populations\" program to produce popgen stats and outputs.
+" >> $log
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+	fi
 
 
 
