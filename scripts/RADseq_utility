@@ -92,16 +92,6 @@ options.
 	fi
 	fi
 
-####################
-####################
-## CONSIDER DELETING
-## Read variables from config file -- might be able to delete the section here
-	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
-	threads=$(expr $cores + 1)
-	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
-	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
-	slminpercent=(`grep "Split_libraries_minpercent" $config | grep -v "#" | cut -f 2`)
-
 ## If user supplied demult-derep, then execute demult-derep script
 	if [[ "$1" == "demult-derep" ]]; then
 		if [[ -z "$2" ]]; then
@@ -111,7 +101,7 @@ options.
 		less $repodir/docs/demult-derep.help
 		exit 0
 		fi
-	bash $scriptdir/RADseq_demult-derep.sh $stdout $stderr $randcode $config $globallocal $2 $3 $4 $5
+	bash $scriptdir/RADseq_demult-derep.sh $stdout $stderr $randcode $configfile $globallocal $2 $3 $4 $5
 	exit 0
 	fi
 
@@ -124,7 +114,7 @@ options.
 		less $repodir/docs/RADseq_workflow.help
 		exit 0
 		fi
-	bash $scriptdir/RADseq_workflow.sh $stdout $stderr $randcode $config $globallocal $2 $3
+	bash $scriptdir/RADseq_workflow.sh $stdout $stderr $randcode $configfile $globallocal $2 $3
 	exit 0
 	fi
 
