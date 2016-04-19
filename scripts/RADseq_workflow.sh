@@ -356,7 +356,7 @@ echo "Running rxstacks to correct SNP calls.
 "
 echo "Running rxstacks to correct SNP calls.
 " >> $log
-		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc
 	fi
 
 ## Rerun cstacks to rebuild catalog
@@ -373,7 +373,7 @@ $outdircor/cstacks_output
 "
 	echo "Rebuilding catalog with cstacks.
 " >> $log
-		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
 	fi
 
 ## Rerun sstacks

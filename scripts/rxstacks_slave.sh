@@ -45,10 +45,10 @@ trap finish EXIT
 	config=($4)
 	outdir=($5)
 	outdirunc=($6)
-	repfile=($7)
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
+	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 
 ## Rxstacks command
 	mkdir -p $outdircor/dereplicated_rxstacks_output
