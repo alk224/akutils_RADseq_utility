@@ -373,8 +373,59 @@ $outdircor/cstacks_output
 "
 	echo "Rebuilding catalog with cstacks.
 " >> $log
-		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
 	fi
+
+## Rerun sstacks
+	res2=$(date +%s.%N)
+	if [[ -d $outdircor/dereplicated_sstacks_output ]]; then
+	echo "Corrected sstacks output directory present.  Skipping step.
+$outdircor/sstacks_output
+"
+	echo "Corrected sstacks output directory present.  Skipping step.
+$outdircor/sstacks_output
+" >> $log
+	else
+	echo "Searching cataloged loci for each corrected sample with sstacks.
+"
+	echo "Searching cataloged loci for each corrected sample with sstacks.
+" >> $log
+		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+	fi
+
+## Copy all useful outputs to same directory for populations calculations
+	res2=$(date +%s.%N)
+## Dereplicated populations
+	if [[ -d $outdircor/dereplicated_stacks_all_output ]]; then
+	echo "Corrected populations output directory present.  Skipping step.
+$outdircor/stacks_all_output
+"
+	echo "Corrected populations output directory present.  Skipping step.
+$outdircor/stacks_all_output
+" >> $log
+	else
+	mkdir -p $outdircor/dereplicated_stacks_all_output
+	cp $outdircor/dereplicated_rxstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+	cp $outdircor/dereplicated_cstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+	cp $outdircor/dereplicated_sstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+
+## Rerun populations
+	echo "Executing \"populations\" program to produce popgen stats and outputs
+for corrected data.
+"
+	echo "Executing \"populations\" program to produce popgen stats and outputs
+for corrected data.
+" >> $log
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+	fi
+
+
+
+
+
+
+
+
 
 
 
