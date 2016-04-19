@@ -253,6 +253,22 @@ $outdirunc/dereplicated_pstacks_output" >> $log
 	fi
 	fi
 
+## Run ustacks for denovo samples
+	res2=$(date +%s.%N)
+	if [[ "$analysis" == "denovo" ]]; then
+	if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
+	echo "Ustacks step already completed. Skipping step.
+$outdirunc/dereplicated_ustacks_output"
+	echo "Ustacks step already completed. Skipping step.
+$outdirunc/dereplicated_ustacks_output" >> $log
+	else
+	echo "Assembling loci denovo with ustacks.
+	"
+	echo "Assembling loci denovo with ustacks.
+	" >> $log
+		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
+	fi
+	fi
 
 
 
