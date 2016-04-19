@@ -2,9 +2,9 @@
 #
 #  Stacks workflow - process raw RADseq data all the way through Stacks pipline
 #
-#  Version 1.1.0 (June 16, 2015)
+#  Version 1.2.0 (April 19, 2016)
 #
-#  Copyright (c) 2014-2015 Andrew Krohn
+#  Copyright (c) 2014-2016 Andrew Krohn
 #
 #  This software is provided 'as-is', without any express or implied
 #  warranty. In no event will the authors be held liable for any damages
@@ -35,7 +35,6 @@ if [[ -f $filetesttemp ]]; then
 fi
 }
 trap finish EXIT
-#set -e
 
 ## Define inputs and working directory
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
@@ -52,12 +51,6 @@ trap finish EXIT
 	ref=($7)
 	date0=`date +%Y%m%d_%I%M%p`
 	date100=`date -R`
-
-## If incorrect number of arguments supplied, display usage
-	if [[ "$#" -ne "7" ]]; then
-		cat $repodir/docs/RADseq_workflow.usage
-		exit 1
-	fi
 
 ## If demult-derep output not present, run first
 	if [[ ! -d "demult-derep_output" ]]; then
@@ -121,9 +114,6 @@ Missing required input files. Exiting.
 ## Read sequencing mode from demult-derep output
 	mode1=$(cat demult-derep_output/.sequencing_mode)
 
-## Batch variable (may need to update for flexibility)
-	batch="1"
-
 ## Define output directory, log file, and database name
 	outdir="$workdir/RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
@@ -160,20 +150,20 @@ ouputs.
 
 ## Read in variables from config file
 	if [[ "$globallocal" == "local" ]]; then
-	echo "Using local akutils config file.
+	echo "Using local akutils RADseq utility config file.
 $config
 	"
 	echo "
-Referencing local akutils config file.
+Referencing local akutils RADseq utility config file.
 $config
 	" >> $log
 	else
 		if [[ "$globallocal" == "global" ]]; then
-		echo "Using global akutils config file.
+		echo "Using global akutils RADseq utility config file.
 $config
 		"
 		echo "
-Referencing global akutils config file.
+Referencing global akutils RADseq utility config file.
 $config
 		" >> $log
 		fi
@@ -181,9 +171,30 @@ $config
 
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	threads=$(expr $cores + 1)
-	qual=(`grep "Split_libraries_qvalue" $config | grep -v "#" | cut -f 2`)
+	qual=(`grep "Qual_score" $config | grep -v "#" | cut -f 2`)
 	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
-	slminpercent=(`grep "Split_libraries_minpercent" $config | grep -v "#" | cut -f 2`)
+	slminpercent="0.95"
+	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Min_depth=(`grep "Min_depth" $config | grep -v "#" | cut -f 2`)
+	Max_stacks_dist=(`grep "Max_stacks_dist" $config | grep -v "#" | cut -f 2`)
+	Max_dist_align=(`grep "Max_dist_align" $config | grep -v "#" | cut -f 2`)
+	Removal_alg=(`grep "Removal_alg" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Removal_alg" == "YES" ]]; then
+			remov="-r"
+		fi
+	Deleverage_alg=(`grep "Deleverage_alg" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Deleverage_alg" == "YES" ]]; then
+			delev="-d"
+		fi
+	Duplicate_match=(`grep "Duplicate_match" $config | grep -v "#" | cut -f 2`)
+	Tag_mismatches=(`grep "Tag_mismatches" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Tag_mismatches" == "YES" ]]; then
+			mismat="-m"
+		fi
+	Catalog_match=(`grep "Catalog_match" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Catalog_match" == "GENOMIC" ]]; then
+			catmat="-g"
+		fi
 
 res0=$(date +%s.%N)
 echo "RADseq workflow beginning.
@@ -193,7 +204,38 @@ CPU cores: $cores
 "
 
 ###################################################################
+## ANALYSIS STEPS BEGIN HERE
+###################################################################
 
+## Align each sample to reference (reference-based analysis only)
+	res2=$(date +%s.%N)
+	if [[ "$analysis" == "reference" ]]; then
+	if [[ -d $outdir/bowtie2_alignments ]]; then
+echo "Alignments previously performed.  Skipping step.
+$outdir/bowtie2_alignments
+"
+	else
+		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $configfile $ref $outdir $mode $mapfile $threads
+	fi
+	fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exit 0
 ## Align each sample to reference (reference-based analysis only)
 res2=$(date +%s.%N)
 if [[ "$analysis" == "reference" ]]; then
