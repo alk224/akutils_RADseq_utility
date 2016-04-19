@@ -1,0 +1,25 @@
+
+***************************************
+***                                 ***
+***   RADseq_utility demult-derep   ***
+***                                 ***
+***************************************
+
+Run the demultiplexing and dereplicating script only.
+
+Usage (order is important):
+RADseq_utility.sh demult-derep <mapping_file> <index_read> <read1> <read2>
+
+	<read2> is optional
+
+Order of processing:
+	1) Demultiplexing according to map file with fastq-multx (ea-utils)
+	2) Dereplication according to map file (cat command)
+	3) Quality filtering according to config file with fastq-mcf (ea-utils)
+	4) Combining quality filtered read1 and read2 files (cat command)
+	
+Mapping file must be in the following format:
+#WellPosition	SampleID	IndexSequence	Rep	PopulationID
+A1	Sample1.1	TTCATCCGTAACGGGA	1	Pop1
+B1	Sample2.1	TTCATCCGGTACCTCA	1	Pop1
+
