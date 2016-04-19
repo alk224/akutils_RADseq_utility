@@ -334,13 +334,47 @@ $outdirunc/dereplicated_stacks_all_output
 		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
 	fi
 
+#################################
+## START OF CORRECTED ANALYSIS ##
+#################################
+echo "Start of corrected analysis steps.
+"
+echo "Start of corrected analysis steps.
+" >> $log
 
+## Population-based corrections using rxstacks
+	res2=$(date +%s.%N)
+	if [[ -d $outdircor/dereplicated_rxstacks_output ]]; then
+echo "Rxstacks output directory present.  Skipping step.
+$outdircor/dereplicated_rxstacks_output
+"
+echo "Rxstacks output directory present.  Skipping step.
+$outdircor/dereplicated_rxstacks_output
+" >> $log
+else
+echo "Running rxstacks to correct SNP calls.
+"
+echo "Running rxstacks to correct SNP calls.
+" >> $log
+		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+	fi
 
-
-
-
-
-
+## Rerun cstacks to rebuild catalog
+	res2=$(date +%s.%N)
+	if [[ -d $outdircor/dereplicated_cstacks_output ]]; then
+	echo "Corrected cstacks output directory present.  Skipping step.
+$outdircor/cstacks_output
+"
+	echo "Corrected cstacks output directory present.  Skipping step.
+$outdircor/cstacks_output
+" >> $log
+	else
+	echo "Rebuilding catalog with cstacks.
+"
+	echo "Rebuilding catalog with cstacks.
+" >> $log
+		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+	fi
 
 
 
