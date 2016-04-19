@@ -1,13 +1,13 @@
 
-******************************
-***                        ***
-***   RADseq_workflow.sh   ***
-***                        ***
-******************************
+**************************
+***                    ***
+***   RADseq_utility   ***
+***                    ***
+**************************
 
 Process RADseq data through a Stacks pipeline.
 
-This Script assumes you already have Stacks functioning with all of its
+This script assumes you already have Stacks functioning with all of its
 dependencies such as mysql, php, and apache2.
 
 Usage (order is important):
@@ -38,7 +38,6 @@ RADseq_utility.sh [command] [arguments]
 	and read2.fastq. If files are named otherwise, script will fail. Also
 	requires a sample map file (any file that starts with "map").
 	
-
 Mapping file must be in the following format:
 #WellPosition	SampleID	IndexSequence	Rep	PopulationID
 A1	Sample1.1	TTCATCCGTAACGGGA	1	Pop1
