@@ -240,9 +240,9 @@ echo "Start of uncorrected analysis steps.
 	res2=$(date +%s.%N)
 	if [[ "$analysis" == "reference" ]]; then
 	if [[ -d $outdirunc/dereplicated_pstacks_output ]]; then
-	echo "Pstacks step already completed. Skipping step.
+	echo "Pstacks output directory present. Skipping step.
 $outdirunc/dereplicated_pstacks_output"
-	echo "Pstacks step already completed. Skipping step.
+	echo "Pstacks output directory present. Skipping step.
 $outdirunc/dereplicated_pstacks_output" >> $log
 	else
 	echo "Extracting stacks from sam files with pstacks.
@@ -257,9 +257,9 @@ $outdirunc/dereplicated_pstacks_output" >> $log
 	res2=$(date +%s.%N)
 	if [[ "$analysis" == "denovo" ]]; then
 	if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
-	echo "Ustacks step already completed. Skipping step.
+	echo "Ustacks output directory present. Skipping step.
 $outdirunc/dereplicated_ustacks_output"
-	echo "Ustacks step already completed. Skipping step.
+	echo "Ustacks output directory present. Skipping step.
 $outdirunc/dereplicated_ustacks_output" >> $log
 	else
 	echo "Assembling loci denovo with ustacks.
@@ -269,6 +269,34 @@ $outdirunc/dereplicated_ustacks_output" >> $log
 		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
 	fi
 	fi
+
+## Run cstacks to catalog loci across samples
+	res2=$(date +%s.%N)
+	if [[ -d $outdirunc/dereplicated_cstacks_output ]]; then
+	echo "Cstacks output directory present.  Skipping step.
+$outdirunc/dereplicated_cstacks_output
+"
+	echo "Cstacks output directory present.  Skipping step.
+$outdirunc/dereplicated_cstacks_output
+" >> $log
+	else
+	echo "Cataloging loci with cstacks.
+"
+	echo "Cataloging loci with cstacks.
+" >> $log
+		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+	fi
+
+
+
+
+
+
+
+
+
+
+
 
 
 
