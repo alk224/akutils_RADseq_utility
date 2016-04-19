@@ -287,7 +287,21 @@ $outdirunc/dereplicated_cstacks_output
 		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
 	fi
 
-
+## Search individual stacks against population catalog
+## Need variables to manage batch IDs and catalog names
+	res2=$(date +%s.%N)
+	if [[ -d $outdirunc/dereplicated_sstacks_output ]]; then
+	echo "Sstacks output directory present.  Skipping step.
+$outdirunc/dereplicated_sstacks_output"
+	echo "Sstacks output directory present.  Skipping step.
+$outdirunc/dereplicated_sstacks_output" >> $log
+	else
+	echo "Searching cataloged loci for each sample with sstacks.
+"
+	echo "Searching cataloged loci for each sample with sstacks.
+" >> $log
+		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+	fi
 
 
 
