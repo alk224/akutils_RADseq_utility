@@ -49,13 +49,15 @@ trap finish EXIT
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
+	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Min_depth=(`grep "Min_depth" $config | grep -v "#" | cut -f 2`)
 
 ## Pstacks command
 	mkdir -p $outdirunc/dereplicated_pstacks_output
 		for line in `cat $repfile | cut -f1`; do
 		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-		echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid" >> $log
-		pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
+		echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid -m $Min_depth" >> $log
+		pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid -m $Min_depth &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
 		done
 
 exit 0

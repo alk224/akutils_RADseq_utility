@@ -258,9 +258,11 @@ $outdirunc/dereplicated_pstacks_output" >> $log
 	if [[ "$analysis" == "denovo" ]]; then
 	if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
 	echo "Ustacks output directory present. Skipping step.
-$outdirunc/dereplicated_ustacks_output"
+$outdirunc/dereplicated_ustacks_output
+"
 	echo "Ustacks output directory present. Skipping step.
-$outdirunc/dereplicated_ustacks_output" >> $log
+$outdirunc/dereplicated_ustacks_output
+" >> $log
 	else
 	echo "Assembling loci denovo with ustacks.
 	"
@@ -291,9 +293,11 @@ $outdirunc/dereplicated_cstacks_output
 	res2=$(date +%s.%N)
 	if [[ -d $outdirunc/dereplicated_sstacks_output ]]; then
 	echo "Sstacks output directory present. Skipping step.
-$outdirunc/dereplicated_sstacks_output"
+$outdirunc/dereplicated_sstacks_output
+"
 	echo "Sstacks output directory present. Skipping step.
-$outdirunc/dereplicated_sstacks_output" >> $log
+$outdirunc/dereplicated_sstacks_output
+" >> $log
 	else
 	echo "Searching cataloged loci for each sample with sstacks.
 "
@@ -306,9 +310,11 @@ $outdirunc/dereplicated_sstacks_output" >> $log
 	res2=$(date +%s.%N)
 	if [[ -d $outdirunc/dereplicated_stacks_all_output ]]; then
 	echo "Populations output directory present. Skipping step.
-$outdirunc/dereplicated_stacks_all_output"
+$outdirunc/dereplicated_stacks_all_output
+"
 	echo "Populations output directory present. Skipping step.
-$outdirunc/dereplicated_stacks_all_output" >> $log
+$outdirunc/dereplicated_stacks_all_output
+" >> $log
 	else
 	echo "Copying all output to new directory for populations calculations.
 $outdirunc/dereplicated_stacks_all_output
@@ -356,7 +362,7 @@ echo "Running rxstacks to correct SNP calls.
 "
 echo "Running rxstacks to correct SNP calls.
 " >> $log
-		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $log
+		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $outdirunc $log
 	fi
 
 ## Rerun cstacks to rebuild catalog
@@ -373,7 +379,7 @@ $outdircor/cstacks_output
 "
 	echo "Rebuilding catalog with cstacks.
 " >> $log
-		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $log
+		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $repfile $log
 	fi
 
 ## Rerun sstacks
@@ -390,7 +396,7 @@ $outdircor/sstacks_output
 "
 	echo "Searching cataloged loci for each corrected sample with sstacks.
 " >> $log
-		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
+		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $repfile $analysis $log
 	fi
 
 ## Copy all useful outputs to same directory for populations calculations
@@ -416,7 +422,7 @@ for corrected data.
 	echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap1 $analysis $log
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap1 $analysis $log
 	fi
 
 

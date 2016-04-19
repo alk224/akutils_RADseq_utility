@@ -52,6 +52,16 @@ trap finish EXIT
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Duplicate_match=(`grep "Duplicate_match" $config | grep -v "#" | cut -f 2`)
+	Tag_mismatches=(`grep "Tag_mismatches" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Tag_mismatches" == "YES" ]]; then
+			mismat="-m"
+		fi
+	Catalog_match=(`grep "Catalog_match" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Catalog_match" == "GENOMIC" ]]; then
+			catmat="-g"
+		fi
+	Allowed_mismatches=(`grep "Allowed_mismatches" $config | grep -v "#" | cut -f 2`)
 
 ## Cstacks command
 	mcfcount=`ls $outdirunc/dereplicated_ustacks_output/*mcf* 2>/dev/null | wc -l`
@@ -68,15 +78,15 @@ mkdir -p $outdirunc/dereplicated_cstacks_output
 	for line in `cat $repfile | cut -f1`; do
 	samp+="-s $outdirunc/dereplicated_pstacks_output/$line "
 	done
-	echo "	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks -g -p $cores -b ${batch} -n 1 $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks $catmat -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks $catmat -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
 			fi
 			if [[ "$analysis" == "denovo" ]]; then
 	for line in `cat $repfile | cut -f1`; do
 	samp+="-s $outdirunc/dereplicated_ustacks_output/$line "
 	done
-	echo "	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks -p $cores -b ${batch} -n 4 -m $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
+	cstacks -p $cores -b ${batch} -n $Allowed_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
 			fi
 
 exit 0

@@ -44,7 +44,7 @@ trap finish EXIT
 	randcode=($3)
 	config=($4)
 	outdir=($5)
-	outdirunc=($6)
+	outdircor=($6)
 	repfile=($7)
 	analysis=($8)
 	log=($9)

@@ -44,8 +44,9 @@ trap finish EXIT
 	randcode=($3)
 	config=($4)
 	outdir=($5)
-	outdirunc=($6)
-	log=($7)
+	outdircor=($6)
+	outdirunc=($7)
+	log=($8)
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)

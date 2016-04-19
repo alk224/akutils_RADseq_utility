@@ -50,14 +50,26 @@ trap finish EXIT
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
+	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Min_depth=(`grep "Min_depth" $config | grep -v "#" | cut -f 2`)
+	Max_stacks_dist=(`grep "Max_stacks_dist" $config | grep -v "#" | cut -f 2`)
+	Max_dist_align=(`grep "Max_dist_align" $config | grep -v "#" | cut -f 2`)
+	Removal_alg=(`grep "Removal_alg" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Removal_alg" == "YES" ]]; then
+			remov="-r"
+		fi
+	Deleverage_alg=(`grep "Deleverage_alg" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Deleverage_alg" == "YES" ]]; then
+			delev="-d"
+		fi
 
 ## Ustacks command
 	mkdir -p $outdirunc/dereplicated_ustacks_output
 
 		for line in `cat $repfile | cut -f1`; do
 		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-		echo "  ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d" >> $log
-		ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m 2 -M 4 -N 6 -r -d &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
+		echo "  ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev" >> $log
+		ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
 		done
 
 exit 0
