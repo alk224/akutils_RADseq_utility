@@ -224,7 +224,7 @@ $ref
 echo "Aligning sequence data to supplied reference sequence.
 $ref
 " >> $log
-		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $configfile $ref $outdir $mode $mapfile $threads
+		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $config $ref $outdir $mode $mapfile $threads
 	fi
 	fi
 
@@ -249,7 +249,7 @@ $outdirunc/dereplicated_pstacks_output" >> $log
 	"
 	echo "Extracting stacks from sam files with pstacks.
 	" >> $log
-		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
+		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile
 	fi
 	fi
 
@@ -266,7 +266,7 @@ $outdirunc/dereplicated_ustacks_output" >> $log
 	"
 	echo "Assembling loci denovo with ustacks.
 	" >> $log
-		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
+		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $log
 	fi
 	fi
 
@@ -284,7 +284,7 @@ $outdirunc/dereplicated_cstacks_output
 "
 	echo "Cataloging loci with cstacks.
 " >> $log
-		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
 
 ## Search individual stacks against population catalog (sstacks)
@@ -299,7 +299,7 @@ $outdirunc/dereplicated_sstacks_output" >> $log
 "
 	echo "Searching cataloged loci for each sample with sstacks.
 " >> $log
-		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
 
 ## Copy all useful outputs to same directory for populations calculations
@@ -331,7 +331,7 @@ $outdirunc/dereplicated_stacks_all_output
 "
 	echo "Executing \"populations\" program to produce popgen stats and outputs.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap1 $analysis $log
 	fi
 
 #################################
@@ -356,7 +356,7 @@ echo "Running rxstacks to correct SNP calls.
 "
 echo "Running rxstacks to correct SNP calls.
 " >> $log
-		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc
+		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $log
 	fi
 
 ## Rerun cstacks to rebuild catalog
@@ -373,7 +373,7 @@ $outdircor/cstacks_output
 "
 	echo "Rebuilding catalog with cstacks.
 " >> $log
-		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile
+		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $log
 	fi
 
 ## Rerun sstacks
@@ -390,7 +390,7 @@ $outdircor/sstacks_output
 "
 	echo "Searching cataloged loci for each corrected sample with sstacks.
 " >> $log
-		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $repfile $analysis
+		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
 
 ## Copy all useful outputs to same directory for populations calculations
@@ -416,7 +416,7 @@ for corrected data.
 	echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $configfile $outdir $outdirunc $popmap1 $analysis
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap1 $analysis $log
 	fi
 
 

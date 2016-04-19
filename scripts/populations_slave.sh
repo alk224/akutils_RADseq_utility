@@ -47,6 +47,7 @@ trap finish EXIT
 	outdirunc=($6)
 	popmap1=($7)
 	analysis=($8)
+	log=($9)
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
