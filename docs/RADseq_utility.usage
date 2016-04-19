@@ -1,6 +1,6 @@
 
 Usage (order is important):
-RADseq_utility.sh [command] [arguments]
+RADseq_utility [command] [arguments]
 
 	Commands:	
 		workflow
