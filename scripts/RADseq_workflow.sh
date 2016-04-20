@@ -450,7 +450,8 @@ Please be patient.
 " >> $log
 	tar -czvf ${outdirname}.tar.gz $outdir &>/dev/null
 	echo "Compression complete."
-	else "Compressed output already present.
+	else 
+	echo "Compressed output already present.
 	"
 	fi
 	echo "Using a terminal window not connected to a server, use the following
