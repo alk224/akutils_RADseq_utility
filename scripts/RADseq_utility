@@ -127,7 +127,7 @@ options.
 		less $repodir/docs/db-load.help
 		exit 0
 		fi
-	bash $scriptdir/db-load.sh $stdout $stderr $randcode
+	bash $scriptdir/db-load.sh $stdout $stderr $randcode $2
 	exit 0
 	fi
 
@@ -140,7 +140,7 @@ options.
 		less $repodir/docs/db-unload.help
 		exit 0
 		fi
-	bash $scriptdir/db-unload.sh $stdout $stderr $randcode
+	bash $scriptdir/db-unload.sh $stdout $stderr $randcode $2
 	exit 0
 	fi
 
