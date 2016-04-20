@@ -465,7 +465,7 @@ scp ${USER}@${ipad}:${outdir}.tar.gz ./
 
 	if [[ "$Load_mysql" == "YES" ]]; then
 	
-	## Add load-db command here
+	## Add db-load command here
 
 	fi
 
