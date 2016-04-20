@@ -230,6 +230,7 @@ $ref
 		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $config $ref $outdir $mode $mapfile $threads
 	fi
 	fi
+wait
 
 ###################################
 ## START OF UNCORRECTED ANALYSIS ##
@@ -255,6 +256,7 @@ $outdirunc/dereplicated_pstacks_output" >> $log
 		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile
 	fi
 	fi
+wait
 
 ## Run ustacks for denovo samples
 	res2=$(date +%s.%N)
@@ -274,6 +276,7 @@ $outdirunc/dereplicated_ustacks_output
 		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $log
 	fi
 	fi
+wait
 
 ## Run cstacks to catalog loci across samples
 	res2=$(date +%s.%N)
@@ -291,6 +294,7 @@ $outdirunc/dereplicated_cstacks_output
 " >> $log
 		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
+wait
 
 ## Search individual stacks against population catalog (sstacks)
 	res2=$(date +%s.%N)
@@ -308,6 +312,7 @@ $outdirunc/dereplicated_sstacks_output
 " >> $log
 		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
+wait
 
 ## Copy all useful outputs to same directory for populations calculations
 	res2=$(date +%s.%N)
@@ -334,6 +339,7 @@ $outdirunc/dereplicated_stacks_all_output
 		fi
 		cp $outdirunc/dereplicated_cstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
 		cp $outdirunc/dereplicated_sstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+wait
 
 ## Run populations program to generate popgen stats plus various outputs
 	echo "Executing \"populations\" program to produce popgen stats and outputs.
@@ -342,6 +348,7 @@ $outdirunc/dereplicated_stacks_all_output
 " >> $log
 		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap1 $analysis $log
 	fi
+wait
 
 #################################
 ## START OF CORRECTED ANALYSIS ##
@@ -367,6 +374,7 @@ echo "Running rxstacks to correct SNP calls.
 " >> $log
 		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $outdirunc $log
 	fi
+wait
 
 ## Rerun cstacks to rebuild catalog
 	res2=$(date +%s.%N)
@@ -384,6 +392,7 @@ $outdircor/cstacks_output
 " >> $log
 		bash $scriptdir/cor_cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $repfile $log
 	fi
+wait
 
 ## Rerun sstacks
 	res2=$(date +%s.%N)
@@ -401,6 +410,7 @@ $outdircor/sstacks_output
 " >> $log
 		bash $scriptdir/cor_sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $repfile $analysis $log
 	fi
+wait
 
 ## Copy all useful outputs to same directory for populations calculations
 	res2=$(date +%s.%N)
@@ -417,6 +427,7 @@ $outdircor/stacks_all_output
 	cp $outdircor/dereplicated_rxstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
 	cp $outdircor/dereplicated_cstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
 	cp $outdircor/dereplicated_sstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+wait
 
 ## Rerun populations
 	echo "Executing \"populations\" program to produce popgen stats and outputs
@@ -427,11 +438,13 @@ for corrected data.
 " >> $log
 		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap1 $analysis $log
 	fi
+wait
 
 ## Generate html output for alternative data formats from populations script
 	cp $repodir/resources/html_template.html $outdir/index.html
 
 	bash $repodir/scripts/html_builder.sh $outdir/index.html $outdirname/corrected_output/dereplicated_stacks_all_output $batch $db corrected_output/dereplicated_stacks_all_output
+wait
 
 ###################################
 ## Add results to mysql database ##
