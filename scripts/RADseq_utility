@@ -144,6 +144,18 @@ options.
 	exit 0
 	fi
 
+## If user supplied metadata_instructions, then show metadata_instructions
+	if [[ "$1" == "metadata_instructions" ]]; then
+		less $repodir/resources/metadata_instructions.txt
+	exit 0
+	fi
+
+## If user supplied metadata, then run metadata builder
+	if [[ "$1" == "metadata" ]]; then
+		bash $repodir/scripts/metadata_builder.sh
+	exit 0
+	fi
+
 ## If different than 5 or 6 arguments supplied, display usage 
 	if [[ "$#" -le 4 ]] || [[ "$#" -ge 7 ]]; then 
 		cat $repodir/docs/RADseq_utility.usage
