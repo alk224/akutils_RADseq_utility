@@ -55,14 +55,14 @@ trap finish EXIT
 
 ## Populations command
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites --bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites --bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites --bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap1 -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --phase --fasta --fstats --merge_sites --bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist --genomic &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 
 exit 0
