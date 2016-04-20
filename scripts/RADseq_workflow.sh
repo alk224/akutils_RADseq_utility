@@ -428,6 +428,10 @@ for corrected data.
 		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap1 $analysis $log
 	fi
 
+## Generate html output for alternative data formats from populations script
+	cp $repodir/resources/html_template.html $outdir/index.html
+
+	bash $repodir/scripts/html_builder.sh $outdir/index.html $outdirname/corrected_output/dereplicated_stacks_all_output $batch $db corrected_output/dereplicated_stacks_all_output
 
 ###################################
 ## Add results to mysql database ##
