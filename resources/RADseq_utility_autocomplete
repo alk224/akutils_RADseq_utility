@@ -9,6 +9,7 @@ _RADseq_utility()
 
   ## Basic options to autocomplete
   opts="demult-derep workflow db-load db-unload help configure print_config
+	metadata metadata_instructions
         "
 
   ## Complete available RADseq_utility command arguments
