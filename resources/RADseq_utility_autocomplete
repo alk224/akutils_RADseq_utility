@@ -39,7 +39,9 @@ _RADseq_utility()
 	  local sub="CPU_cores Qual_score Multx_errors Batch_ID
 		Min_depth Max_stacks_dist Max_dist_align Removal_alg
 		Deleverage_alg Duplicate_match Tag_mismatches
-		Catalog_match
+		Catalog_match Min_perc_pop Min_pops Min_stack_depth
+		Fstats Single_snp Random_snp Kernel_smooth Window_size
+		Load_mysql Compress_output
 		help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;
