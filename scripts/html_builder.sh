@@ -59,6 +59,58 @@ trap finish EXIT
 	sed -i "s/<!--anchor002a-->/$structurefilename/" $html
 	fi
 
+	#plink map
+	plinkmapfilename="batch_${batch}.plink.map"
+	plinkmapfile="$outdir/$plinkmapfilename"
+	plinkmapfile2="$outdir2/$plinkmapfilename"
+	if [[ -f "$plinkmapfile" ]]; then
+	sed -i "s|<!--anchor003-->|$plinkmapfile2|" $html
+	sed -i "s/<!--anchor003a-->/$plinkmapfilename/" $html
+	fi
 
+	#plink ped
+	plinkpedfilename="batch_${batch}.plink.ped"
+	plinkpedfile="$outdir/$plinkpedfilename"
+	plinkpedfile2="$outdir2/$plinkpedfilename"
+	if [[ -f "$plinkpedfile" ]]; then
+	sed -i "s|<!--anchor004-->|$plinkpedfile2|" $html
+	sed -i "s/<!--anchor004a-->/$plinkpedfilename/" $html
+	fi
+
+	#vcf
+	vcffilename="batch_${batch}.vcf"
+	vcffile="$outdir/$vcffilename"
+	vcffile2="$outdir2/$vcffilename"
+	if [[ -f "$vcffile" ]]; then
+	sed -i "s|<!--anchor005-->|$vcffile2|" $html
+	sed -i "s/<!--anchor005a-->/$vcffilename/" $html
+	fi
+
+	#genepop
+	genepopfilename="batch_${batch}.genepop"
+	genepopfile="$outdir/$genepopfilename"
+	genepopfile2="$outdir2/$genepopfilename"
+	if [[ -f "$vcffile" ]]; then
+	sed -i "s|<!--anchor006-->|$genepopfile2|" $html
+	sed -i "s/<!--anchor006a-->/$genepopfilename/" $html
+	fi
+
+	#phylip
+	phylipfilename="batch_${batch}.phylip"
+	phylipfile="$outdir/$phylipfilename"
+	phylipfile2="$outdir2/$phylipfilename"
+	if [[ -f "$vcffile" ]]; then
+	sed -i "s|<!--anchor007-->|$phylipfile2|" $html
+	sed -i "s/<!--anchor007a-->/$phylipfilename/" $html
+	fi
+
+	#fasta
+	fastafilename="batch_${batch}.fa"
+	fastafile="$outdir/$fastafilename"
+	fastafile2="$outdir2/$fastafilename"
+	if [[ -f "$vcffile" ]]; then
+	sed -i "s|<!--anchor008-->|$fastafile2|" $html
+	sed -i "s/<!--anchor008a-->/$fastafilename/" $html
+	fi
 
 exit 0
