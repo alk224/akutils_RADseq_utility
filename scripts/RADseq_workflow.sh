@@ -374,7 +374,7 @@ echo "Running rxstacks to correct SNP calls.
 		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $outdirunc $log
 	fi
 wait
-exit 0
+
 ## Rerun cstacks to rebuild catalog
 	res2=$(date +%s.%N)
 	if [[ -d $outdircor/dereplicated_cstacks_output ]]; then
@@ -435,7 +435,7 @@ for corrected data.
 	echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap $analysis $log
+		bash $scriptdir/cor_populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap $analysis $log
 	fi
 wait
 

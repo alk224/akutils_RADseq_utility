@@ -55,12 +55,12 @@ trap finish EXIT
 
 ## Populations command
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -r 0.5 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -r 0.5 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
 		fi
 
 exit 0

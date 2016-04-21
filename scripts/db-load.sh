@@ -47,6 +47,9 @@ trap finish EXIT
 	log=$(ls $dbdir/log_*)
 	db=$(cat $dbdir/.dbname)
 	outdircor="$dbdir/corrected_output"
+	config=$(bash $scriptdir/config_id.sh)
+	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	popmap="demult-derep_output/populations_file.txt"
 
 ## Check that mysql is present before continuing
 	mysqltest=$(command -v mysql 2>/dev/null | wc -l)
@@ -83,8 +86,8 @@ Database: $db
 	echo "Loading and indexing your Stacks analysis.
 Database: $db
 "
-	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$db corrected and dereplicated output\" -M $popmap -c -t population" >> $log
-	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$db corrected and dereplicated output" -M $popmap -c -t population &>/dev/null
+	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$db\" -M $popmap -c -t population" >> $log
+	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$db" -M $popmap -c -t population &>/dev/null
 	wait
 	echo "	index_radtags.pl -D $db -c -t
 " >> $log
