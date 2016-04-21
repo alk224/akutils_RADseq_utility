@@ -208,16 +208,20 @@ I will now go through each configurable field and require your input. Press ente
 to retain the current value or enter a new value. When entering paths (say, to
 greengenes database) use absolute path and remember to use tab-autocomplete to
 avoid errors. Settings are cap-sensitive and must be entered correctly, or you
-may experience errors with your workflow.
+may experience errors with your workflow. Hit <enter> when ready to proceed.
 	"
+	read -e nullvariable
+	tput clear
 
 for field in `grep -v "#" $configfile | cut -f 1`; do
-	fielddesc=`grep $field $configfile | grep "#" | cut -f 2-3`
+	fielddesc1=`grep $field $configfile | grep "#" | cut -f 2`
+	fielddesc2=`grep $field $configfile | grep "#" | cut -f 3`
+	setting=`grep $field $configfile | grep -v "#" | cut -f 2`
 
 	echo "
-Field: $fielddesc"
-	setting=`grep $field $configfile | grep -v "#" | cut -f 2`
-	echo "Current setting is: ${bold}${setting}${normal}
+Field: ${bold}${fielddesc1}${normal}
+Current setting is: ${bold}${setting}${normal}
+$fielddesc2
 
 Enter new value (or press enter to keep current setting):"
 	read -e newsetting
@@ -228,7 +232,9 @@ Enter new value (or press enter to keep current setting):"
 	else
 	echo "Setting unchanged.
 	"
+	sleep 0.2
 	fi
+	tput clear
 done
 
 echo "$configfile updated.
