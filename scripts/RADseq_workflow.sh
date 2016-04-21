@@ -167,6 +167,13 @@ $config
 		fi
 	fi
 
+## Read configured variables to log
+	echo "****************************
+Configuration file settings:" >> $log
+	RADseq_utility print_config >> $log
+	echo "" >> $log
+
+## Read configured variables into script
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	threads=$(expr $cores + 1)
 	qual=(`grep "Qual_score" $config | grep -v "#" | cut -f 2`)

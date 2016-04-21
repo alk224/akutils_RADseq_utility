@@ -52,15 +52,38 @@ trap finish EXIT
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Min_perc_pop=(`grep "Min_perc_pop" $config | grep -v "#" | cut -f 2`)
+	Min_pops=(`grep "Min_pops" $config | grep -v "#" | cut -f 2`)
+	Min_stack_depth=(`grep "Min_stack_depth" $config | grep -v "#" | cut -f 2`)
+	Fstats=(`grep "Fstats" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Fstats" == "YES" ]]; then
+			fstats="--fstats"
+		fi
+	Single_snp=(`grep "Single_snp" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Single_snp" == "YES" ]]; then
+			single="--write_single_snp"
+		fi
+	Random_snp=(`grep "Random_snp" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Random_snp" == "YES" ]]; then
+			random="--write_random_snp"
+		fi
+	Kernel_smooth=(`grep "Kernel_smooth" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Kernel_smooth" == "YES" ]]; then
+			kern="-k"
+		fi
+	Window_size=(`grep "Window_size" $config | grep -v "#" | cut -f 2`)
+		if [[ "$Window_size" != "DEFAULT" ]]; then
+			winsize="--window_size $Window_size"
+		fi
 
 ## Populations command
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -r 0.5 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -r 0.5 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p $Min_pops -f p_value -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p $Min_pops -f p_value -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
-	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -k -r 0.75 -s --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta --fstats --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p $Min_pops -f p_value -k -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize &> $outdircor/dereplicated_stacks_all_output/log_populations.txt" >> $log
+	populations -t $cores -b ${batch} -P $outdircor/dereplicated_stacks_all_output -M $popmap -p $Min_pops -f p_value -k -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/dereplicated_stacks_all_output/log_populations.txt
 		fi
 
 exit 0

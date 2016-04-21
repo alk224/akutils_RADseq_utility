@@ -52,17 +52,19 @@ trap finish EXIT
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
+	Min_perc_pop=(`grep "Min_perc_pop" $config | grep -v "#" | cut -f 2`)
+	Min_pops=(`grep "Min_pops" $config | grep -v "#" | cut -f 2`)
 
 ## Populations command
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value --genepop -r 0.5 -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value --genepop -r 0.5 -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p 1 -f p_value -k -r 0.75 -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p 2 -f p_value -k -r 0.75 -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
 		fi
 
 exit 0
