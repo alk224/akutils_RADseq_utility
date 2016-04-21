@@ -41,8 +41,8 @@ trap finish EXIT
 ## Set working directory and other important variables
 	workdir=$(pwd)
 	randcode=`cat /dev/urandom |tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1` 2>/dev/null
-	stderr=($repodir/temp/$randcode\_stderr)
-	stdout=($repodir/temp/$randcode\_stdout)
+	stderr=($repodir/temp/${randcode}_stderr)
+	stdout=($repodir/temp/${randcode}_stdout)
 
 ## Usage and help
 	usage="$repodir/docs/RADseq_utility.usage"

@@ -30,9 +30,6 @@ fi
 if [[ -f $stderr ]]; then
 	rm -r $stderr
 fi
-if [[ -f $filetesttemp ]]; then
-	rm -r $filetesttemp
-fi
 }
 trap finish EXIT
 
@@ -290,7 +287,8 @@ $outdirunc/dereplicated_cstacks_output
 	else
 	echo "Cataloging loci with cstacks.
 "
-	echo "Cataloging loci with cstacks.
+	echo "
+Cataloging loci with cstacks.
 " >> $log
 		bash $scriptdir/cstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
@@ -308,7 +306,8 @@ $outdirunc/dereplicated_sstacks_output
 	else
 	echo "Searching cataloged loci for each sample with sstacks.
 "
-	echo "Searching cataloged loci for each sample with sstacks.
+	echo "
+Searching cataloged loci for each sample with sstacks.
 " >> $log
 		bash $scriptdir/sstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $analysis $log
 	fi
@@ -346,7 +345,7 @@ wait
 "
 	echo "Executing \"populations\" program to produce popgen stats and outputs.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap1 $analysis $log
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $popmap $analysis $log
 	fi
 wait
 
@@ -375,7 +374,7 @@ echo "Running rxstacks to correct SNP calls.
 		bash $scriptdir/rxstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $outdirunc $log
 	fi
 wait
-
+exit 0
 ## Rerun cstacks to rebuild catalog
 	res2=$(date +%s.%N)
 	if [[ -d $outdircor/dereplicated_cstacks_output ]]; then
@@ -436,7 +435,7 @@ for corrected data.
 	echo "Executing \"populations\" program to produce popgen stats and outputs
 for corrected data.
 " >> $log
-		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap1 $analysis $log
+		bash $scriptdir/populations_slave.sh $stdout $stderr $randcode $config $outdir $outdircor $popmap $analysis $log
 	fi
 wait
 
