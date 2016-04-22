@@ -447,9 +447,10 @@ for corrected data.
 wait
 
 ## Generate html output for alternative data formats from populations script
-	cp $repodir/resources/html_template.html $outdir/index.html
+	mkdir -p $outdir/html
+	cp $repodir/resources/html_template.html $outdir/html/index.html
 
-	bash $repodir/scripts/html_builder.sh $outdir/index.html $outdirname/corrected_output/dereplicated_stacks_all_output $batch $db corrected_output/dereplicated_stacks_all_output
+	bash $repodir/scripts/html_builder.sh $outdir/html/index.html $outdirname/corrected_output/dereplicated_stacks_all_output $batch $db corrected_output/dereplicated_stacks_all_output $outdir
 wait
 
 ###################################
@@ -466,13 +467,13 @@ Workflow processing complete.
 	" >> $log
 	if [[ "$Compress_output" == "YES" ]]; then
 	ipad=$(dig +short myip.opendns.com @resolver1.opendns.com)
-	if [[ ! -f ${outdirname}.tar.gz ]]; then
+	if [[ ! -f ${dbname}_${outdirname}.tar.gz ]]; then
 	echo "Compressing output for download (.tar.gz format).
 Please be patient.
 "
 	echo "Compressing output for download (.tar.gz format).
 " >> $log
-	tar -czvf ${outdirname}.tar.gz $outdir &>/dev/null
+	tar -czvf ${dbname}_${outdirname}.tar.gz $outdir &>/dev/null
 	echo "Compression complete."
 	else 
 	echo "Compressed output already present.
@@ -486,6 +487,23 @@ scp ${USER}@${ipad}:${outdir}.tar.gz ./
 "
 	fi
 	exit 0
+	fi
+
+	## Optional compression for web-loading analysis
+	if [[ "$Compress_output" == "YES" ]]; then
+	ipad=$(dig +short myip.opendns.com @resolver1.opendns.com)
+	if [[ ! -f ${dbname}_${outdirname}.tar.gz ]]; then
+	echo "Compressing output for download (.tar.gz format).
+Please be patient.
+"
+	echo "Compressing output for download (.tar.gz format).
+" >> $log
+	tar -czvf ${dbname}_${outdirname}.tar.gz $outdir &>/dev/null
+	echo "Compression complete."
+	else 
+	echo "Compressed output already present.
+	"
+	fi
 	fi
 
 	## Add db-load command here

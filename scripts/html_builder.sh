@@ -44,6 +44,9 @@ trap finish EXIT
 	batch=($3)
 	db=($4)
 	outdir2=($5)
+	outdir3=($6)
+
+	dbname=$(echo $db | cut -d"_" -f1)
 
 ## Search and replace functions to add links
 
@@ -54,8 +57,10 @@ trap finish EXIT
 	structurefilename="batch_${batch}.structure.tsv"
 	structurefile="$outdir/$structurefilename"
 	structurefile2="$outdir2/$structurefilename"
+	cp $structurefile $outdir3/html/
+	structurefile3="$outdir3/html/$structurefilename"
 	if [[ -f "$structurefile" ]]; then
-	sed -i "s|<!--anchor002-->|$structurefile2|" $html
+	sed -i "s|<!--anchor002-->|$structurefilename|" $html
 	sed -i "s/<!--anchor002a-->/$structurefilename/" $html
 	fi
 
@@ -63,8 +68,10 @@ trap finish EXIT
 	plinkmapfilename="batch_${batch}.plink.map"
 	plinkmapfile="$outdir/$plinkmapfilename"
 	plinkmapfile2="$outdir2/$plinkmapfilename"
+	cp $plinkmapfile $outdir3/html/
+	plinkmapfile3="$outdir3/html/$plinkmapfilename"
 	if [[ -f "$plinkmapfile" ]]; then
-	sed -i "s|<!--anchor003-->|$plinkmapfile2|" $html
+	sed -i "s|<!--anchor003-->|$plinkmapfilename|" $html
 	sed -i "s/<!--anchor003a-->/$plinkmapfilename/" $html
 	fi
 
@@ -72,8 +79,10 @@ trap finish EXIT
 	plinkpedfilename="batch_${batch}.plink.ped"
 	plinkpedfile="$outdir/$plinkpedfilename"
 	plinkpedfile2="$outdir2/$plinkpedfilename"
+	cp $plinkpedfile $outdir3/html/
+	plinkpedfile3="$outdir3/html/$plinkpedfilename"
 	if [[ -f "$plinkpedfile" ]]; then
-	sed -i "s|<!--anchor004-->|$plinkpedfile2|" $html
+	sed -i "s|<!--anchor004-->|$plinkpedfilename|" $html
 	sed -i "s/<!--anchor004a-->/$plinkpedfilename/" $html
 	fi
 
@@ -81,8 +90,10 @@ trap finish EXIT
 	vcffilename="batch_${batch}.vcf"
 	vcffile="$outdir/$vcffilename"
 	vcffile2="$outdir2/$vcffilename"
+	cp $vcffile $outdir3/html/
+	vcffile3="$outdir3/html/$vcffilename"
 	if [[ -f "$vcffile" ]]; then
-	sed -i "s|<!--anchor005-->|$vcffile2|" $html
+	sed -i "s|<!--anchor005-->|$vcffilename|" $html
 	sed -i "s/<!--anchor005a-->/$vcffilename/" $html
 	fi
 
@@ -90,8 +101,10 @@ trap finish EXIT
 	genepopfilename="batch_${batch}.genepop"
 	genepopfile="$outdir/$genepopfilename"
 	genepopfile2="$outdir2/$genepopfilename"
+	cp $genepopfile $outdir3/html/
+	genepopfile3="$outdir3/html/$genepopfilename"
 	if [[ -f "$vcffile" ]]; then
-	sed -i "s|<!--anchor006-->|$genepopfile2|" $html
+	sed -i "s|<!--anchor006-->|$genepopfilename|" $html
 	sed -i "s/<!--anchor006a-->/$genepopfilename/" $html
 	fi
 
@@ -99,8 +112,10 @@ trap finish EXIT
 	phylipfilename="batch_${batch}.phylip"
 	phylipfile="$outdir/$phylipfilename"
 	phylipfile2="$outdir2/$phylipfilename"
+	cp $phylipfile $outdir3/html/
+	phylipfile3="$outdir3/html/$phylipfilename"
 	if [[ -f "$vcffile" ]]; then
-	sed -i "s|<!--anchor007-->|$phylipfile2|" $html
+	sed -i "s|<!--anchor007-->|$phylipfilename|" $html
 	sed -i "s/<!--anchor007a-->/$phylipfilename/" $html
 	fi
 
@@ -108,8 +123,10 @@ trap finish EXIT
 	fastafilename="batch_${batch}.fa"
 	fastafile="$outdir/$fastafilename"
 	fastafile2="$outdir2/$fastafilename"
+	cp $fastafile $outdir3/html/
+	fastafile3="$outdir3/html/$fastafilename"
 	if [[ -f "$vcffile" ]]; then
-	sed -i "s|<!--anchor008-->|$fastafile2|" $html
+	sed -i "s|<!--anchor008-->|$fastafilename|" $html
 	sed -i "s/<!--anchor008a-->/$fastafilename/" $html
 	fi
 

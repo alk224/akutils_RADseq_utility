@@ -50,6 +50,7 @@ trap finish EXIT
 	config=$(bash $scriptdir/config_id.sh)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 	popmap="demult-derep_output/populations_file.txt"
+	hn=$(hostname)
 
 ## Check that mysql is present before continuing
 	mysqltest=$(command -v mysql 2>/dev/null | wc -l)
@@ -58,6 +59,19 @@ trap finish EXIT
 MySql does not seem to be present on your system. Aborting.
 "
 	exit 1
+	fi
+
+## Check for html output
+	dbmode=$(echo $db | cut -d"_" -f2)
+	dbname=$(echo $db | cut -d"_" -f1)
+	dbmn=$(echo $db | cut -d"_" -f1-2)
+	htmltest=$(ls $dbdir/html/index.html 2>/dev/null | wc -l)
+	if [[ "$htmltest" -ge "1" ]]; then
+		altout="$dbdir/html/"
+		altout1="${dbmn}_html"
+		altout2="${altout1}/index.html"
+		rm -r /usr/local/share/stacks/php/$altout1 2>/dev/null
+		cp -r $altout /usr/local/share/stacks/php/$altout1
 	fi
 
 ## Report function
@@ -86,8 +100,8 @@ Database: $db
 	echo "Loading and indexing your Stacks analysis.
 Database: $db
 "
-	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"$db\" -M $popmap -c -t population" >> $log
-	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "$db" -M $popmap -c -t population &>/dev/null
+	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"Alt output: <a href=\"$altout2\>$dbmn</a>\" \" -M $popmap -c -t population" >> $log
+	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "Alt output: <a href=\"$altout2\">$dbmn</a>" -M $popmap -c -t population &>/dev/null
 	wait
 	echo "	index_radtags.pl -D $db -c -t
 " >> $log
@@ -95,7 +109,7 @@ Database: $db
 	wait
 
 	echo "Your analysis is ready for viewing. Copy this address into your browser:
-http://localhost/stacks/
+http://$hn/stacks/
 "
 
 exit 0
