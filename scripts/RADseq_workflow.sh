@@ -466,7 +466,7 @@ Workflow processing complete.
 Workflow processing complete.
 	" >> $log
 	if [[ "$Compress_output" == "YES" ]]; then
-	ipad=$(dig +short myip.opendns.com @resolver1.opendns.com)
+	ipad=$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)
 	if [[ ! -f ${dbname}_${outdirname}.tar.gz ]]; then
 	echo "Compressing output for download (.tar.gz format).
 Please be patient.
