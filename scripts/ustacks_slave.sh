@@ -64,12 +64,12 @@ trap finish EXIT
 		fi
 
 ## Ustacks command
-	mkdir -p $outdirunc/dereplicated_ustacks_output
+	mkdir -p $outdirunc/ustacks_output
 
 		for line in `cat $repfile | cut -f1`; do
 		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-		echo "  ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev" >> $log
-		ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/dereplicated_ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev &> $outdirunc/dereplicated_ustacks_output/log_${line}_ustacks.txt
+		echo "  ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev" >> $log
+		ustacks -t fastq -f $workdir/demult-derep_output/dereplicated_combined_data/${line}.fq -p $cores -o $outdirunc/ustacks_output -i $sqlid -m $Min_depth -M $Max_stacks_dist -N $Max_dist_align $remov $delev &> $outdirunc/ustacks_output/log_${line}_ustacks.txt
 		done
 
 exit 0

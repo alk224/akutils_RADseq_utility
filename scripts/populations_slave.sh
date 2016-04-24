@@ -57,14 +57,14 @@ trap finish EXIT
 
 ## Populations command
 		if [[ "$analysis" == "denovo" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/stacks_all_output/log_populations.txt
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-	echo "	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	echo "	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/stacks_all_output/log_populations.txt
 	" >> $log
-	populations -t $cores -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/dereplicated_stacks_all_output/log_populations.txt
+	populations -t $cores -b ${batch} -P $outdirunc/stacks_all_output -M $popmap -p $Min_pops -r $Min_perc_pop -s &> $outdirunc/stacks_all_output/log_populations.txt
 		fi
 
 exit 0

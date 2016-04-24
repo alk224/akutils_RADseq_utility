@@ -247,11 +247,11 @@ echo "Start of uncorrected analysis steps.
 ## Run pstacks for reference-based analysis
 	res2=$(date +%s.%N)
 	if [[ "$analysis" == "reference" ]]; then
-	if [[ -d $outdirunc/dereplicated_pstacks_output ]]; then
+	if [[ -d $outdirunc/pstacks_output ]]; then
 	echo "Pstacks output directory present. Skipping step.
-$outdirunc/dereplicated_pstacks_output"
+$outdirunc/pstacks_output"
 	echo "Pstacks output directory present. Skipping step.
-$outdirunc/dereplicated_pstacks_output" >> $log
+$outdirunc/pstacks_output" >> $log
 	else
 	echo "Extracting stacks from sam files with pstacks.
 	"
@@ -265,12 +265,12 @@ wait
 ## Run ustacks for denovo samples
 	res2=$(date +%s.%N)
 	if [[ "$analysis" == "denovo" ]]; then
-	if [[ -d $outdirunc/dereplicated_ustacks_output ]]; then
+	if [[ -d $outdirunc/ustacks_output ]]; then
 	echo "Ustacks output directory present. Skipping step.
-$outdirunc/dereplicated_ustacks_output
+$outdirunc/ustacks_output
 "
 	echo "Ustacks output directory present. Skipping step.
-$outdirunc/dereplicated_ustacks_output
+$outdirunc/ustacks_output
 " >> $log
 	else
 	echo "Assembling loci denovo with ustacks.
@@ -284,12 +284,12 @@ wait
 
 ## Run cstacks to catalog loci across samples
 	res2=$(date +%s.%N)
-	if [[ -d $outdirunc/dereplicated_cstacks_output ]]; then
+	if [[ -d $outdirunc/cstacks_output ]]; then
 	echo "Cstacks output directory present.  Skipping step.
-$outdirunc/dereplicated_cstacks_output
+$outdirunc/cstacks_output
 "
 	echo "Cstacks output directory present.  Skipping step.
-$outdirunc/dereplicated_cstacks_output
+$outdirunc/cstacks_output
 " >> $log
 	else
 	echo "Cataloging loci with cstacks.
@@ -303,12 +303,12 @@ wait
 
 ## Search individual stacks against population catalog (sstacks)
 	res2=$(date +%s.%N)
-	if [[ -d $outdirunc/dereplicated_sstacks_output ]]; then
+	if [[ -d $outdirunc/sstacks_output ]]; then
 	echo "Sstacks output directory present. Skipping step.
-$outdirunc/dereplicated_sstacks_output
+$outdirunc/sstacks_output
 "
 	echo "Sstacks output directory present. Skipping step.
-$outdirunc/dereplicated_sstacks_output
+$outdirunc/sstacks_output
 " >> $log
 	else
 	echo "Searching cataloged loci for each sample with sstacks.
@@ -322,29 +322,29 @@ wait
 
 ## Copy all useful outputs to same directory for populations calculations
 	res2=$(date +%s.%N)
-	if [[ -d $outdirunc/dereplicated_stacks_all_output ]]; then
+	if [[ -d $outdirunc/stacks_all_output ]]; then
 	echo "Populations output directory present. Skipping step.
-$outdirunc/dereplicated_stacks_all_output
+$outdirunc/stacks_all_output
 "
 	echo "Populations output directory present. Skipping step.
-$outdirunc/dereplicated_stacks_all_output
+$outdirunc/stacks_all_output
 " >> $log
 	else
 	echo "Copying all output to new directory for populations calculations.
-$outdirunc/dereplicated_stacks_all_output
+$outdirunc/stacks_all_output
 "
 	echo "Copying all output to new directory for populations calculations.
-$outdirunc/dereplicated_stacks_all_output
+$outdirunc/stacks_all_output
 " >> $log
-	mkdir -p $outdirunc/dereplicated_stacks_all_output
+	mkdir -p $outdirunc/stacks_all_output
 		if [[ "$analysis" == "denovo" ]]; then
-		cp $outdirunc/dereplicated_ustacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		cp $outdirunc/ustacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
 		fi
 		if [[ "$analysis" == "reference" ]]; then
-		cp $outdirunc/dereplicated_pstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		cp $outdirunc/pstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
 		fi
-		cp $outdirunc/dereplicated_cstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
-		cp $outdirunc/dereplicated_sstacks_output/*.tsv $outdirunc/dereplicated_stacks_all_output 2>/dev/null || true
+		cp $outdirunc/cstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
+		cp $outdirunc/sstacks_output/*.tsv $outdirunc/stacks_all_output 2>/dev/null || true
 wait
 
 ## Run populations program to generate popgen stats plus various outputs
@@ -366,12 +366,12 @@ echo "Start of corrected analysis steps.
 
 ## Population-based corrections using rxstacks
 	res2=$(date +%s.%N)
-	if [[ -d $outdircor/dereplicated_rxstacks_output ]]; then
+	if [[ -d $outdircor/rxstacks_output ]]; then
 echo "Rxstacks output directory present.  Skipping step.
-$outdircor/dereplicated_rxstacks_output
+$outdircor/rxstacks_output
 "
 echo "Rxstacks output directory present.  Skipping step.
-$outdircor/dereplicated_rxstacks_output
+$outdircor/rxstacks_output
 " >> $log
 else
 echo "Running rxstacks to correct SNP calls.
@@ -384,7 +384,7 @@ wait
 
 ## Rerun cstacks to rebuild catalog
 	res2=$(date +%s.%N)
-	if [[ -d $outdircor/dereplicated_cstacks_output ]]; then
+	if [[ -d $outdircor/cstacks_output ]]; then
 	echo "Corrected cstacks output directory present.  Skipping step.
 $outdircor/cstacks_output
 "
@@ -402,7 +402,7 @@ wait
 
 ## Rerun sstacks
 	res2=$(date +%s.%N)
-	if [[ -d $outdircor/dereplicated_sstacks_output ]]; then
+	if [[ -d $outdircor/sstacks_output ]]; then
 	echo "Corrected sstacks output directory present.  Skipping step.
 $outdircor/sstacks_output
 "
@@ -421,7 +421,7 @@ wait
 ## Copy all useful outputs to same directory for populations calculations
 	res2=$(date +%s.%N)
 ## Dereplicated populations
-	if [[ -d $outdircor/dereplicated_stacks_all_output ]]; then
+	if [[ -d $outdircor/stacks_all_output ]]; then
 	echo "Corrected populations output directory present.  Skipping step.
 $outdircor/stacks_all_output
 "
@@ -429,10 +429,10 @@ $outdircor/stacks_all_output
 $outdircor/stacks_all_output
 " >> $log
 	else
-	mkdir -p $outdircor/dereplicated_stacks_all_output
-	cp $outdircor/dereplicated_rxstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
-	cp $outdircor/dereplicated_cstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
-	cp $outdircor/dereplicated_sstacks_output/*.tsv $outdircor/dereplicated_stacks_all_output
+	mkdir -p $outdircor/stacks_all_output
+	cp $outdircor/rxstacks_output/*.tsv $outdircor/stacks_all_output
+	cp $outdircor/cstacks_output/*.tsv $outdircor/stacks_all_output
+	cp $outdircor/sstacks_output/*.tsv $outdircor/stacks_all_output
 wait
 
 ## Rerun populations
@@ -450,7 +450,7 @@ wait
 	mkdir -p $outdir/html
 	cp $repodir/resources/html_template.html $outdir/html/index.html
 
-	bash $repodir/scripts/html_builder.sh $outdir/html/index.html $outdirname/corrected_output/dereplicated_stacks_all_output $batch $db corrected_output/dereplicated_stacks_all_output $outdir
+	bash $repodir/scripts/html_builder.sh $outdir/html/index.html $outdirname/corrected_output/stacks_all_output $batch $db corrected_output/stacks_all_output $outdir
 wait
 
 ###################################

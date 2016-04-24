@@ -54,10 +54,10 @@ trap finish EXIT
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 
 ## Sstacks command
-	mkdir -p $outdircor/dereplicated_sstacks_output
+	mkdir -p $outdircor/sstacks_output
 	for line in `cat $repfile | cut -f1`; do
-	echo "	sstacks -b ${batch} -c $outdircor/dereplicated_cstacks_output/batch_${batch} -s $outdircor/dereplicated_rxstacks_output/$line -p $cores -o $outdircor/dereplicated_sstacks_output &> $outdircor/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b ${batch} -c $outdircor/dereplicated_cstacks_output/batch_${batch} -s $outdircor/dereplicated_rxstacks_output/$line -p $cores -o $outdircor/dereplicated_sstacks_output &> $outdircor/dereplicated_sstacks_output/log_${line}_sstacks.txt
+	echo "	sstacks -b ${batch} -c $outdircor/cstacks_output/batch_${batch} -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdircor/cstacks_output/batch_${batch} -s $outdircor/rxstacks_output/$line -p $cores -o $outdircor/sstacks_output &> $outdircor/sstacks_output/log_${line}_sstacks.txt
 	done
 
 exit 0

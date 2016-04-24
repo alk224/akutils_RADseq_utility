@@ -53,11 +53,11 @@ trap finish EXIT
 	Min_depth=(`grep "Min_depth" $config | grep -v "#" | cut -f 2`)
 
 ## Pstacks command
-	mkdir -p $outdirunc/dereplicated_pstacks_output
+	mkdir -p $outdirunc/pstacks_output
 		for line in `cat $repfile | cut -f1`; do
 		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-		echo "  pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid -m $Min_depth" >> $log
-		pstacks -t sam -f $outdir/dereplicated_bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/dereplicated_pstacks_output -i $sqlid -m $Min_depth &> $outdirunc/dereplicated_pstacks_output/log_${line}_pstacks.txt
+		echo "  pstacks -t sam -f $outdir/bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth" >> $log
+		pstacks -t sam -f $outdir/bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth &> $outdirunc/pstacks_output/log_${line}_pstacks.txt
 		done
 
 exit 0

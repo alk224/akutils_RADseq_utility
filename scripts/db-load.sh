@@ -100,8 +100,8 @@ Database: $db
 	echo "Loading and indexing your Stacks analysis.
 Database: $db
 "
-	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e \"Alt output: <a href=\"$altout2\>$dbmn</a>\" \" -M $popmap -c -t population" >> $log
-	load_radtags.pl -D $db -b ${batch} -p $outdircor/dereplicated_stacks_all_output -B -e "Alt output: <a href=\"$altout2\">$dbmn</a>" -M $popmap -c -t population &>/dev/null
+	echo "	load_radtags.pl -D $db -b ${batch} -p $outdircor/stacks_all_output -B -e \"Alt output: <a href=\"$altout2\>$dbmn</a>\" \" -M $popmap -c -t population" >> $log
+	load_radtags.pl -D $db -b ${batch} -p $outdircor/stacks_all_output -B -e "Alt output: <a href=\"$altout2\">$dbmn</a>" -M $popmap -c -t population &>/dev/null
 	wait
 	echo "	index_radtags.pl -D $db -c -t
 " >> $log

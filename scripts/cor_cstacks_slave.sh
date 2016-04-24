@@ -53,12 +53,12 @@ trap finish EXIT
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 
 ## Cstacks command
-	mkdir -p $outdircor/dereplicated_cstacks_output
+	mkdir -p $outdircor/cstacks_output
 	samp=""
 	for line in `cat $repfile | cut -f1`; do
-	samp+="-s $outdircor/dereplicated_rxstacks_output/$line "
+	samp+="-s $outdircor/rxstacks_output/$line "
 	done
-	echo "	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/dereplicated_cstacks_output $samp &> $outdircor/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/dereplicated_cstacks_output $samp &> $outdircor/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt" >> $log
+	cstacks -b ${batch} -n 3 -p $cores -o $outdircor/cstacks_output $samp &> $outdircor/cstacks_output/log_cstacks.txt
 
 exit 0

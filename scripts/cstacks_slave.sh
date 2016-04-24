@@ -63,29 +63,29 @@ trap finish EXIT
 		fi
 
 ## Cstacks command
-	mcfcount=`ls $outdirunc/dereplicated_ustacks_output/*mcf* 2>/dev/null | wc -l`
+	mcfcount=`ls $outdirunc/ustacks_output/*mcf* 2>/dev/null | wc -l`
 			if [[ $mcfcount -ge 1 ]]; then
-	cd $outdirunc/dereplicated_ustacks_output
+	cd $outdirunc/ustacks_output
 	rename 's/read.mcf.//' *read.mcf*
 	rename 's/read1.mcf.//' *read1.mcf*
 	rename 's/read2.mcf.//' *read2.mcf*
 	cd $workdir
 			fi
-mkdir -p $outdirunc/dereplicated_cstacks_output
+mkdir -p $outdirunc/cstacks_output
 	samp=""
 			if [[ "$analysis" == "reference" ]]; then
 	for line in `cat $repfile | cut -f1`; do
-	samp+="-s $outdirunc/dereplicated_pstacks_output/$line "
+	samp+="-s $outdirunc/pstacks_output/$line "
 	done
-	echo "	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
+	cstacks $catmat -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
 			fi
 			if [[ "$analysis" == "denovo" ]]; then
 	for line in `cat $repfile | cut -f1`; do
-	samp+="-s $outdirunc/dereplicated_ustacks_output/$line "
+	samp+="-s $outdirunc/ustacks_output/$line "
 	done
-	echo "	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt" >> $log
-	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/dereplicated_cstacks_output &> $outdirunc/dereplicated_cstacks_output/log_cstacks.txt
+	echo "	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt" >> $log
+	cstacks -p $cores -b ${batch} -n $Tag_mismatches $mismat $samp -o $outdirunc/cstacks_output &> $outdirunc/cstacks_output/log_cstacks.txt
 			fi
 
 exit 0

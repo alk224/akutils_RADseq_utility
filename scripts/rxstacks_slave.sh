@@ -53,9 +53,9 @@ trap finish EXIT
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 
 ## Rxstacks command
-	mkdir -p $outdircor/dereplicated_rxstacks_output
-	echo "	rxstacks -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -o $outdircor/dereplicated_rxstacks_output --prune_haplo --model_type bounded --bound_high 0.1 --lnl_dist -t $cores --verbose &> $outdircor/dereplicated_rxstacks_output/log_rxstacks.txt
+	mkdir -p $outdircor/rxstacks_output
+	echo "	rxstacks -b ${batch} -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --prune_haplo --model_type bounded --bound_high 0.1 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt
 	" >> $log
-	rxstacks -b ${batch} -P $outdirunc/dereplicated_stacks_all_output -o $outdircor/dereplicated_rxstacks_output --prune_haplo --model_type snp --bound_high 0.1 --lnl_dist -t $cores --verbose &> $outdircor/dereplicated_rxstacks_output/log_rxstacks.txt
+	rxstacks -b ${batch} -P $outdirunc/stacks_all_output -o $outdircor/rxstacks_output --prune_haplo --model_type snp --bound_high 0.1 --lnl_dist -t $cores --verbose &> $outdircor/rxstacks_output/log_rxstacks.txt
 
 exit 0

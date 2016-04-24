@@ -54,15 +54,15 @@ trap finish EXIT
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 
 ## Sstacks command
-	mkdir -p $outdirunc/dereplicated_sstacks_output
+	mkdir -p $outdirunc/sstacks_output
 	for line in `cat $repfile | cut -f1`; do
 				if [[ "$analysis" == "reference" ]]; then
-	echo "	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_pstacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_pstacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt
+	echo "	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/pstacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
 				fi
 				if [[ "$analysis" == "denovo" ]]; then
-	echo "	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_ustacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt" >> $log
-	sstacks -b ${batch} -c $outdirunc/dereplicated_cstacks_output/batch_${batch} -s $outdirunc/dereplicated_ustacks_output/$line -p $cores -o $outdirunc/dereplicated_sstacks_output &> $outdirunc/dereplicated_sstacks_output/log_${line}_sstacks.txt
+	echo "	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt" >> $log
+	sstacks -b ${batch} -c $outdirunc/cstacks_output/batch_${batch} -s $outdirunc/ustacks_output/$line -p $cores -o $outdirunc/sstacks_output &> $outdirunc/sstacks_output/log_${line}_sstacks.txt
 				fi
 	done
 

@@ -50,6 +50,8 @@ trap finish EXIT
 	threads=($9)
 
 ## Bowtie2 commands
+## Error exists. Needs to reference the correct data source
+###########################################################
 echo "Aligning quality-filtered data to reference sequence(s).
 Supplied reference: $ref
 "
@@ -62,8 +64,8 @@ mkdir -p $outdir/bowtie2_alignments
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	bowtie2-align --local -x $ref -U $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
-		( bowtie2-align --local -x $ref -U $outdir/dereplicated_quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+		echo "	bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
 	done
 	fi
 	if [[ "$mode" == "paired" ]]; then
@@ -71,8 +73,8 @@ mkdir -p $outdir/bowtie2_alignments
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	bowtie2-align --local -x $ref -1 $outdir/dereplicated_quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/dereplicated_quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
-		( bowtie2-align --local -x $ref -1 $outdir/dereplicated_quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/dereplicated_quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+		echo "	bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
 	done
 	fi
 wait
