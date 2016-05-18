@@ -481,7 +481,7 @@ Please be patient.
 	fi
 	echo "Using a terminal window not connected to a server, use the following
 command to transfer the output to your local home directory. Should work natively
-on Linux or Mac systems. Windows users should install pscp or winscp.
+on Linux or Mac systems. Windows users should install pscp, winscp or MobaXterm.
 
 scp ${USER}@${ipad}:${outdir}.tar.gz ./
 "
