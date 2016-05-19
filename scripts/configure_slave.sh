@@ -103,7 +103,7 @@ No global config file detected in akutils RADseq resources directory.
 ($repodir/resources/)
 
 Creating new global config file."
-		cp $repodir/resources/blank_config.config $repodir/resources/akutils_RADseq.global.config
+		cat $repodir/resources/blank_config.config > $repodir/resources/akutils_RADseq.global.config
 		configfile=($repodir/resources/akutils_RADseq.global.config)
 		else
 		echo "Found existing global config file.
