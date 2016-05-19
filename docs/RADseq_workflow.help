@@ -9,7 +9,7 @@ Process RADseq data through a Stacks-based workflow.
 Usage (order is important):
 RADseq_utility workflow <databasename> <reference>
 
-	<databasename> should NOT include "_radtags" suffix
+	<databasename> should NOT include "_radtags" suffix or hyphens
 	<reference> is absolute path to bowtie2-indexed reference or 
 	specify "denovo" for denovo analysis
 
