@@ -96,7 +96,7 @@ Missing required input files. Exiting.
 
 ## Define file variables from demult-derep output
 	mapfile="$workdir/demult-derep_output/metadata_file.txt"
-	popmap="$workdir/demult-derep_output/populations_file.txt"
+	popmap0="$workdir/demult-derep_output/populations_file.txt"
 	repfile="$workdir/demult-derep_output/repfile.txt"
 
 ## Determine analysis mode based user input
@@ -113,6 +113,7 @@ Missing required input files. Exiting.
 
 ## Define output directory, log file, and database name
 	outdir="$workdir/RADseq_workflow_${analysis}"
+	popmap="$outdir/populations_file.txt"
 	outdirname="RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
@@ -145,6 +146,9 @@ ouputs.
 			echo "$db" > $outdir/.dbname
 		fi
 	fi
+
+	## Copy in popmap file from source
+	cp $popmap0 $popmap
 
 ## Read in variables from config file
 	if [[ "$globallocal" == "local" ]]; then
