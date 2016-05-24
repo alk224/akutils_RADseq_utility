@@ -49,7 +49,7 @@ trap finish EXIT
 	outdircor="$dbdir/corrected_output"
 	config=$(bash $scriptdir/config_id.sh)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
-	popmap="demult-derep_output/populations_file.txt"
+	popmap="$dbdir/populations_file.txt"
 	hn=$(hostname)
 
 ## Check that mysql is present before continuing
