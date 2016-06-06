@@ -1,6 +1,6 @@
 #akutils_RADseq_utility  
 
-RADseq analysis commands built on the akutils framework.  
+RADseq analysis commands built on the akutils framework. Super easy to go from raw to analyzed data. Set up population data within a QIIME-inspired metadata file.  
 
 To enable bash autocompletion for RADseq_utility, run the install script from within the repository directory:  
 
