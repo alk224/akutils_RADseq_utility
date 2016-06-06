@@ -2,6 +2,10 @@
 
 RADseq analysis commands built on the akutils framework. Super easy to go from raw to analyzed data. Set up population data within a QIIME-inspired metadata file.  
 
+Tested on Ubuntu OS locally and remotely on the Monsoon high performance computing system at NAU (CentOS). For local installs, follow instructions here (https://github.com/alk224/akutils_ubuntu_installer) to get all dependencies. For cluster environment, will need to call ea-utils (demultiplexing and quality filtering), bowtie2 (for reference-alignments), and stacks 1.37 or higher. Note that reference-based analysis remains untested as of 6-6-16 and is probably non-functional.
+
+Users of Monsoon at NAU can use the [slurm_builder.sh](https://github.com/alk224/akutils-v1.2/wiki/slurm_builder.sh) command from [akutils](http://alk224.github.io/akutils-v1.2/) to produce a functional slurm script for use with RADseq commands.
+
 To enable bash autocompletion for RADseq_utility, run the install script from within the repository directory:  
 
     bash install  
