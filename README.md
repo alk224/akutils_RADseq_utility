@@ -1,4 +1,5 @@
-**akutils_RADseq_utility**  
+#akutils_RADseq_utility  
+
 RADseq analysis commands built on the akutils framework.  
 
 To enable bash autocompletion for RADseq_utility, run the install script from within the repository directory:  
