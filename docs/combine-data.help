@@ -1,14 +1,18 @@
 
-************************************
-***                              ***
-***   RADseq_utility unload-db   ***
-***                              ***
-************************************
+***************************************
+***                                 ***
+***   RADseq_utility combine-data   ***
+***                                 ***
+***************************************
 
-Unload the database for an existing analysis from MySql
+Combine demult-derep outputs into a single directory for a larger analysis
 
 Usage (order is important):
-RADseq_utility unload-db <analysis_directory>
+RADseq_utility combine-data <analysis_directory> <target_directory>
 
-<analysis_directory> is either RADseq_workflow_denovo or RADseq_denovo_reference
+	<analysis_directory> is where the data you want to combine currently resides
+	<target_directory> is where you want the data to be combined into
+
+This script can only combine one analysis at a time into the target. You need
+only to have performed the demult-derep command on any data you wish to include.
 

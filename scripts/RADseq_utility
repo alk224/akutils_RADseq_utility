@@ -153,7 +153,7 @@ options.
 		less $repodir/docs/combine-data.help
 		exit 0
 		fi
-	bash $scriptdir/combine-data.sh $stdout $stderr $randcode $2
+	bash $scriptdir/combine-data.sh $stdout $stderr $randcode $2 $3
 	exit 0
 	fi
 

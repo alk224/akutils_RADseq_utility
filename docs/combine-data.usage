@@ -1,4 +1,7 @@
 
 Usage (order is important):
-RADseq_utility unload-db <analysis_directory>
+RADseq_utility combine-data <analysis_directory> <target_directory>
+
+	<analysis_directory> is where the data you want to combine currently resides
+	<target_directory> is where you want the data to be combined into
 
