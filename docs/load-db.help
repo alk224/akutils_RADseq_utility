@@ -1,0 +1,14 @@
+
+**********************************
+***                            ***
+***   RADseq_utility load-db   ***
+***                            ***
+**********************************
+
+Load your database into MySql for viewing via the web interface
+
+Usage (order is important):
+RADseq_utility load-db <analysis_directory>
+
+<analysis_directory> is either RADseq_workflow_denovo or RADseq_denovo_reference
+

@@ -1,0 +1,14 @@
+
+************************************
+***                              ***
+***   RADseq_utility unload-db   ***
+***                              ***
+************************************
+
+Unload the database for an existing analysis from MySql
+
+Usage (order is important):
+RADseq_utility unload-db <analysis_directory>
+
+<analysis_directory> is either RADseq_workflow_denovo or RADseq_denovo_reference
+
