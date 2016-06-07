@@ -8,8 +8,8 @@ _RADseq_utility()
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
   ## Basic options to autocomplete
-  opts="demult-derep workflow db-load db-unload help configure print_config
-	metadata metadata_instructions
+  opts="demult-derep workflow load-db unload-db combine-data help configure
+	print_config metadata metadata_instructions
         "
 
   ## Complete available RADseq_utility command arguments
@@ -27,11 +27,15 @@ _RADseq_utility()
 	  local sub="help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;
-	db-load)
+	load-db)
 	  local sub="help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;
-	db-unload)
+	unload-db)
+	  local sub="help"
+	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
+	  ;;
+	combine-data)
 	  local sub="help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;
