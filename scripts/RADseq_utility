@@ -118,29 +118,42 @@ options.
 	exit 0
 	fi
 
-## If user supplied db-load, then execute db-load script
-	if [[ "$1" == "db-load" ]]; then
+## If user supplied load-db, then execute load-db script
+	if [[ "$1" == "load-db" ]]; then
 		if [[ -z "$2" ]]; then
-		cat $repodir/docs/db-load.usage
+		cat $repodir/docs/load-db.usage
 		exit 0
 		elif [[ "$2" == "help" ]]; then
-		less $repodir/docs/db-load.help
+		less $repodir/docs/load-db.help
 		exit 0
 		fi
-	bash $scriptdir/db-load.sh $stdout $stderr $randcode $2
+	bash $scriptdir/load-db.sh $stdout $stderr $randcode $2
 	exit 0
 	fi
 
-## If user supplied db-unload, then execute db-unload script
-	if [[ "$1" == "db-unload" ]]; then
+## If user supplied unload-db, then execute unload-db script
+	if [[ "$1" == "unload-db" ]]; then
 		if [[ -z "$2" ]]; then
-		cat $repodir/docs/db-unload.usage
+		cat $repodir/docs/unload-db.usage
 		exit 0
 		elif [[ "$2" == "help" ]]; then
-		less $repodir/docs/db-unload.help
+		less $repodir/docs/unload-db.help
 		exit 0
 		fi
-	bash $scriptdir/db-unload.sh $stdout $stderr $randcode $2
+	bash $scriptdir/unload-db.sh $stdout $stderr $randcode $2
+	exit 0
+	fi
+
+## If user supplied combine-data, then execute combine-data script
+	if [[ "$1" == "combine-data" ]]; then
+		if [[ -z "$2" ]]; then
+		cat $repodir/docs/combine-data.usage
+		exit 0
+		elif [[ "$2" == "help" ]]; then
+		less $repodir/docs/combine-data.help
+		exit 0
+		fi
+	bash $scriptdir/combine-data.sh $stdout $stderr $randcode $2
 	exit 0
 	fi
 
