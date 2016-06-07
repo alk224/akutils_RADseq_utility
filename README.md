@@ -1,27 +1,20 @@
-# akutils_RADseq_utility
-RADseq commands built on the akutils framework
+#akutils_RADseq_utility  
 
-Major restructuring underway as of 4-18-2016 ##
-Expect major improvements in functionality as well
-as allowing for combining of runs. RADseq workflow
-now has its own config system to facilitate better
-flexibility. Replicates are properly handled at
-present by combining them according to your map file.
+RADseq analysis commands built on the akutils framework. Super easy to go from raw to analyzed data. Set up population data within a QIIME-inspired metadata file.  
 
-To enable bash autocompletion for RADseq_utility, run
-the install script from within the repository
-directory:
+Tested on Ubuntu OS locally and remotely on the Monsoon high performance computing system at NAU (CentOS). For local installs, follow instructions here (https://github.com/alk224/akutils_ubuntu_installer) to get all dependencies. For cluster environment just clone the repository, and call ea-utils (demultiplexing and quality filtering), bowtie2 (for reference-alignments), and stacks 1.37 or higher when issuing commands. Note that reference-based analysis remains untested as of 6-6-16 and is probably still non-functional.
+
+Users of Monsoon at NAU can use the [slurm_builder.sh](https://github.com/alk224/akutils-v1.2/wiki/slurm_builder.sh) command from [akutils](http://alk224.github.io/akutils-v1.2/) to produce a functional slurm script for use with RADseq commands.
+
+To get the RADseq_utility on your cluster account, simply clone this repo:  
+
+    git clone https://github.com/alk224/akutils_RADseq_utility.git
+
+To enable bash autocompletion for RADseq_utility, run the install script from within the cloned repository directory:  
 
     bash install  
 
 
-Most help and usage files are in place. Use help or
--h --help to view help files. Enter a command with
-no arguments to see usage.
+Most help and usage files are in place. Use help or -h --help to view help files. Enter a command with no arguments to see usage.  
 
-Script is functional if basic.  Need to add in variation on analysis that allow 
-for analysis via samtools and for proper handling of replicate samples.
-
-Also want a tool that allows reloading of existing data in case of system crash
-which requires reinstallation.
-
+See [wiki pages](https://github.com/alk224/akutils_RADseq_utility/wiki) for specific command help and tutorial pages (coming soon).  
