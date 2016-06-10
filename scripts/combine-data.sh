@@ -145,6 +145,9 @@ cat $sourceids
 	copyrec="$tempdir/${randcode}_copyrecord"
 	for line in `cat $sourceids`; do
 		if [[ -f ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ]]; then
+			if [[ ! -d ${target}/demult-derep_output/dereplicated_combined_data ]]; then
+				mkdir -p ${target}/demult-derep_output/dereplicated_combined_data
+			fi
 		cp ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ${target}/demult-derep_output/dereplicated_combined_data/${line}.fq
 		echo "cp ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ${target}/demult-derep_output/dereplicated_combined_data/${line}.fq"
 		echo $line.fq >> $copyrec
