@@ -126,10 +126,12 @@ Duplicate sample IDs found. Skipping these samples:"
 	if [[ "$istarget" == "no" ]]; then
 		cp $source/demult-derep_output/populations_file.txt $target/demult-derep_output/populations_file.txt
 		cp $source/demult-derep_output/metadata_file.txt $target/demult-derep_output/metadata_file.txt
+		cp $source/demult-derep_output/repfile.txt $target/demult-derep_output/repfile.txt
 	else
 		for line in `cat $sourceids`; do
 		grep -w $line $source/demult-derep_output/populations_file.txt >> $target/demult-derep_output/populations_file.txt
 		grep -w $line $source/demult-derep_output/metadata_file.txt  >> $target/demult-derep_output/metadata_file.txt
+		grep -w $line $source/demult-derep_output/repfile.txt  >> $target/demult-derep_output/repfile.txt
 		done
 	fi
 
