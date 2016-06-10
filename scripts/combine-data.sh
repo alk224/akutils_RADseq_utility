@@ -121,11 +121,7 @@ Duplicate sample IDs found. Skipping these samples:"
 			done
 	fi
 	fi
-echo "
-sourceids file:
-"
-cat $sourceids
-echo ""
+
 ## Copy populations and metadata to target directory
 	if [[ "$istarget" == "no" ]]; then
 		cp $source/demult-derep_output/populations_file.txt $target/demult-derep_output/populations_file.txt
@@ -133,6 +129,8 @@ echo ""
 		cp $source/demult-derep_output/repfile.txt $target/demult-derep_output/repfile.txt
 	else
 		for line in `cat $sourceids`; do
+echo "
+$line"
 		grep -w $line $source/demult-derep_output/populations_file.txt >> $target/demult-derep_output/populations_file.txt
 		grep -w $line $source/demult-derep_output/metadata_file.txt  >> $target/demult-derep_output/metadata_file.txt
 		grep -w $line $source/demult-derep_output/repfile.txt  >> $target/demult-derep_output/repfile.txt
