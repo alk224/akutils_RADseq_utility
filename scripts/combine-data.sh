@@ -128,6 +128,10 @@ Duplicate sample IDs found. Skipping these samples:"
 		cp $source/demult-derep_output/metadata_file.txt $target/demult-derep_output/metadata_file.txt
 		cp $source/demult-derep_output/repfile.txt $target/demult-derep_output/repfile.txt
 	else
+		touch $target/demult-derep_output/populations_file.txt
+		touch $target/demult-derep_output/metadata_file.txt
+		touch $target/demult-derep_output/repfile.txt
+
 		for line in `cat $sourceids`; do
 echo "
 $line"
