@@ -147,8 +147,8 @@ Copying sample fastq data to target directory.
 	"
 	copyrec="$tempdir/${randcode}_copyrecord"
 	for line in `cat $sourceids`; do
-		if [[ ! -f ${source}demult-derep_output/dereplicated_combined_data/${line}.fq ]]; then
-		cp ${source}demult-derep_output/dereplicated_combined_data/${line}.fq ${target}/demult-derep_output/dereplicated_combined_data/${line}.fq
+		if [[ ! -f ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ]]; then
+		cp ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ${target}/demult-derep_output/dereplicated_combined_data/${line}.fq
 		echo $line.fq >> $copyrec
 		fi
 		wait
