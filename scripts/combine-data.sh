@@ -128,16 +128,12 @@ Duplicate sample IDs found. Skipping these samples:"
 		cp $source/demult-derep_output/metadata_file.txt $target/demult-derep_output/metadata_file.txt
 		cp $source/demult-derep_output/repfile.txt $target/demult-derep_output/repfile.txt
 	else
-#		touch $target/demult-derep_output/populations_file.txt
-#		touch $target/demult-derep_output/metadata_file.txt
-#		touch $target/demult-derep_output/repfile.txt
+
 		mkdir $target/demult-derep_output
 		for line in `cat $sourceids`; do
-echo "
-$line"
 		grep -w $line $source/demult-derep_output/populations_file.txt >> $target/demult-derep_output/populations_file.txt
-		grep -w $line $source/demult-derep_output/metadata_file.txt  >> $target/demult-derep_output/metadata_file.txt
-		grep -w $line $source/demult-derep_output/repfile.txt  >> $target/demult-derep_output/repfile.txt
+		grep -w $line $source/demult-derep_output/metadata_file.txt >> $target/demult-derep_output/metadata_file.txt
+		grep -w $line $source/demult-derep_output/repfile.txt >> $target/demult-derep_output/repfile.txt
 		done
 	fi
 
@@ -145,6 +141,7 @@ $line"
 	echo "
 Copying sample fastq data to target directory.
 	"
+cat $sourceids
 	copyrec="$tempdir/${randcode}_copyrecord"
 	for line in `cat $sourceids`; do
 		if [[ ! -f ${source}/demult-derep_output/dereplicated_combined_data/${line}.fq ]]; then
@@ -153,7 +150,8 @@ Copying sample fastq data to target directory.
 		fi
 		wait
 	done
-
+echo "copyrec file:"
+cat $copyrec
 ## Report completion
 	if [[ -f $copyrec ]]; then
 	echo "Combine-data function complete.
