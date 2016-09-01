@@ -510,9 +510,9 @@ Please be patient.
 	fi
 	fi
 
-	## Add db-load command here
+	## Add load-db command here
 	if [[ "$Load_mysql" == "YES" ]]; then
-	bash $scriptdir/db-load.sh $stdout $stderr $randcode $outdirname
+	bash $scriptdir/load-db.sh $stdout $stderr $randcode $outdirname
 	fi
 
 exit 0
