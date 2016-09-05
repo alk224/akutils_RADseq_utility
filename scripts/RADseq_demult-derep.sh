@@ -45,6 +45,9 @@ fi
 if [[ -f $popmap1 ]]; then
 	rm -r $popmap1
 fi
+if [[ -f $mapcheck ]]; then
+	rm -r $mapcheck
+fi
 }
 trap finish EXIT
 #set -e
@@ -68,6 +71,17 @@ trap finish EXIT
 ## If incorrect number of arguments supplied, display usage
 	if [[ "$#" -le "7" ]] || [[ "$#" -ge "10" ]]; then
 		cat $repodir/docs/demult-derep.usage
+		exit 1
+	fi
+
+## Test for errors in map file
+	mapcheck="$tempdir/${randcode}_mapcheck.temp"
+	RADseq_utility metadata_check $metadatafile0 > $mapcheck
+	if [[ ! -z "$mapcheck" ]]; then
+		cat $mapcheck
+		echo "
+Please correct errors and try again. Exiting.
+		"
 		exit 1
 	fi
 
