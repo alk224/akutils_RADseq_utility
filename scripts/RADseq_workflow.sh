@@ -30,6 +30,12 @@ fi
 if [[ -f $stderr ]]; then
 	rm -r $stderr
 fi
+if [[ -f $filetesttemp ]]; then
+	rm -r $filetesttemp
+fi
+if [[ -f $mapcheck ]]; then
+	rm -r $mapcheck
+fi
 }
 trap finish EXIT
 
@@ -57,6 +63,17 @@ trap finish EXIT
 	index=$(ls index.fastq 2>/dev/null)
 	read1=$(ls read1.fastq 2>/dev/null)
 	read2=$(ls read2.fastq 2>/dev/null)
+
+	# Test for errors in map file
+	mapcheck="$tempdir/${randcode}_mapcheck.temp"
+	RADseq_utility metadata_check $map > $mapcheck
+	if [[ ! -z "$mapcheck" ]]; then
+		cat $mapcheck
+		echo "
+Please correct errors and try again. Exiting.
+		"
+		exit 1
+	fi
 
 	# Test for valid file definitions, exit if necessary
 	filetesttemp="$tempdir/${randcode}_filetest.temp"
