@@ -157,6 +157,12 @@ options.
 	exit 0
 	fi
 
+## If user supplied metadata_check, then execute metadata_check script
+	if [[ "$1" == "metadata_check" ]]; then
+		bash $scriptdir/map_check.sh $stdout $stderr $randcode $2
+	exit 0
+	fi
+
 ## If user supplied metadata_instructions, then show metadata_instructions
 	if [[ "$1" == "metadata_instructions" ]]; then
 		less $repodir/resources/metadata_instructions.txt
