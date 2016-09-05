@@ -85,5 +85,6 @@ trap finish EXIT
 	echo "	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p $Min_pops -f p_value -k -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize &> $outdircor/stacks_all_output/log_populations.txt" >> $log
 	populations -t $cores -b ${batch} -P $outdircor/stacks_all_output -M $popmap -p $Min_pops -f p_value -k -r $Min_perc_pop -s -m $Min_stack_depth --structure --phylip --genepop --vcf --vcf_haplotypes --phase --fastphase --beagle --beagle_phased --plink --fasta $fstats $single $random $kern $winsize --merge_sites -- bootstrap --bootstrap_pifis --bootstrap_fst --bootstrap_div --bootstrap_phist &> $outdircor/stacks_all_output/log_populations.txt
 		fi
+wait
 
 exit 0
