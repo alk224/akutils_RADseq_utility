@@ -141,5 +141,12 @@ SampleID0.2
 		"
 	fi
 
+## If no errors, indicate success
+
+	if [[ ! -f "$temp3" && ! -f "$temp6" && ! -f "$temp8" ]]; then
+	echo "
+Mapping file validated.
+	"
+	fi
 
 exit 0

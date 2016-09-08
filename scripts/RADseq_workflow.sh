@@ -67,13 +67,13 @@ trap finish EXIT
 	# Test for errors in map file
 	mapcheck="$tempdir/${randcode}_mapcheck.temp"
 	RADseq_utility metadata_check $map > $mapcheck
-	if [[ ! -z "$mapcheck" ]]; then
-		cat $mapcheck
-		echo "
-Please correct errors and try again. Exiting.
-		"
-		exit 1
-	fi
+	#if [[ ! -z "$mapcheck" ]]; then
+	#	cat $mapcheck
+	#	echo "
+#Please correct errors and try again. Exiting.
+	#	"
+	#	exit 1
+	#fi
 
 	# Test for valid file definitions, exit if necessary
 	filetesttemp="$tempdir/${randcode}_filetest.temp"
