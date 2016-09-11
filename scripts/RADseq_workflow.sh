@@ -147,9 +147,9 @@ Missing required input files. Exiting.
 	sortcountfile="$tempdir/${randcode}_sortcountfile.temp"
 	cat $sortlist | cut -f1 > $sortcountfile
 echo "
-sortlist:
-$sortlist
-"	
+sortlist:"
+cat $sortlist
+echo ""	
 ## Map to references
 	echo "Mapping raw files against $sortcount reference(s).
 	"
@@ -185,12 +185,12 @@ $mapdir		"
 		fi
 	
 
-echo ${count}_mapping_${name}
+echo ${count}_mapping_${name} >> outdir.list
 	
 	done
 
 	fi
-
+cat outdir.list
 exit 0
 
 for i in `cat $sortcountfile`; do
