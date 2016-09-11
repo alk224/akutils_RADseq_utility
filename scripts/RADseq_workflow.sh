@@ -152,7 +152,7 @@ Missing required input files. Exiting.
 			j="RADseq_workflow_${analysis}_${name}"
 			echo $j
 		done
-	elif [[ "$sortdata" == "no" ]]; then
+	#elif [[ "$sortdata" == "no" ]]; then
 	
 	fi
 
