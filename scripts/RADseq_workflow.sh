@@ -141,16 +141,25 @@ Missing required input files. Exiting.
 	sortdata="no"
 	fi
 
+## Sort reads if sortlist is present and create list of output directories
 	if [[ "$sortdata" == "yes" ]]; then
 	sortcount0=$(cat $sortlist | wc -l)
 	sortcount=$(($sortcount0-1))
 	sortcountfile="$tempdir/${randcode}_sortcountfile.temp"
 	cat $sortlist | cut -f1 > $sortcountfile
-echo "
-sortlist:"
-cat $sortlist
-echo ""	
+		for i in `head -$sortcount0 $sortcountfile`; do
+			name=$(grep -w "^$i" $sortlist | cut -f2)
+			j="RADseq_workflow_${analysis}_${name}"
+			echo $j
+		done
+	elif [[ "$sortdata" == "no" ]]; then
+	
+	fi
+
+exit 0 
+
 ## Map to references
+	if [[ "$sortdata" == "yes" ]]; then
 	echo "Mapping raw files against $sortcount reference(s).
 	"
 	for i in `head -$sortcount $sortcountfile`; do
@@ -168,7 +177,7 @@ echo ""
 		fi
 
 ## Set out directory and map reads
-		mapdir="${count}_mapping_${name}"
+		mapdir="read_sorting/${count}_mapping_${name}"
 		if [[ ! -d "$mapdir" ]]; then
 		mkdir $mapdir
 			for seqfile in `ls demult-derep_output/dereplicated_combined_data/*.fq`; do
