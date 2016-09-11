@@ -146,8 +146,11 @@ Missing required input files. Exiting.
 	sortcount=$(($sortcount0-1))
 	sortcountfile="$tempdir/${randcode}_sortcountfile.temp"
 	cat $sortlist | cut -f1 > $sortcountfile
-	
-	## Map to references
+echo "
+sortlist:
+$sortlist
+"	
+## Map to references
 	echo "Mapping raw files against $sortcount reference(s).
 	"
 	for i in `head -$sortcount $sortcountfile`; do
@@ -159,12 +162,12 @@ Missing required input files. Exiting.
 		namebase=$(basename $path .$pathext)
 		refname="$pathdir/$namebase"
 
-		## Index reference if necessary
+## Index reference if necessary
 		if [[ ! -f "$refname.sma" && ! -f "$refname.smi" ]]; then
 			smalt index -k 11 -s 1 $refname $path &> $pathdir/log_smalt_indexing.txt
 		fi
 
-		## Set out directory
+## Set out directory and map reads
 		mapdir="${count}_mapping_${name}"
 		if [[ ! -d "$mapdir" ]]; then
 		mkdir $mapdir
@@ -182,11 +185,7 @@ $mapdir		"
 		fi
 	
 
-echo $path
-echo $pathext
-echo $pathdir
-echo $namebase
-echo $refname
+echo ${count}_mapping_${name}
 	
 	done
 
@@ -205,6 +204,10 @@ done
 
 
 exit 0
+
+## Possible solution to outdir problem
+## Set separate log file and outdir for each output/analysis
+## Make list of outdirs before starting and use for loop to run through each one.
 
 
 ## Define output directory, log file, and database name
