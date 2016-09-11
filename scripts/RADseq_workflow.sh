@@ -44,7 +44,7 @@ if [[ -f $outlist ]]; then
 fi
 }
 trap finish EXIT
-outlist
+
 ## Define inputs and working directory
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
 	repodir=`dirname $scriptdir`
@@ -160,10 +160,6 @@ Missing required input files. Exiting.
 		echo "Radseq_workflow_${analysis}_alldata" >> $outlist	
 	fi
 
-cat $outlist
-
-exit 0 
-
 ## Map to references
 	if [[ "$sortdata" == "yes" ]]; then
 	echo "Mapping raw files against $sortcount reference(s).
@@ -199,44 +195,24 @@ Output directory already present for mapping against $name. Skipping.
 $mapdir		"
 		fi
 	
-
-echo ${count}_mapping_${name} >> outdir.list
-	
 	done
 
 	fi
-cat outdir.list
 exit 0
-
-for i in `cat $sortcountfile`; do
-	count=$(grep -w "^$i" $sortlist | cut -f1)
-	name=$(grep -w "^$i" $sortlist | cut -f2)
-	path=$(grep -w "^$i" $sortlist | cut -f3)
-	echo "
-	$count	$name	$path
-	"	
-done
-
-
-exit 0
-
-## Possible solution to outdir problem
-## Set separate log file and outdir for each output/analysis
-## Make list of outdirs before starting and use for loop to run through each one.
-
 
 ## Define output directory, log file, and database name
-	outdir0="$workdir/RADseq_workflow_${analysis}"
-	popmap="$outdir0/populations_file.txt"
+	for i in `cat $outlist`; do
+	outdir="$workdir/$i"
+	popmap="$outdir/populations_file.txt"
 	outdirname="RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
-	if [[ -d "$outdir0" ]]; then
+	if [[ -d "$outdir" ]]; then
 	echo "
 Output directory already exists. Attempting to use previously generated
 ouputs.
 	"
-	log=`ls $outdir0/log_RADseq_workflow_* | head -1`
+	log=`ls $outdir/log_RADseq_workflow_* | head -1`
 		if [[ -f "$outdir/.dbname" ]]; then
 		db=$(cat $outdir/.dbname)
 		else
@@ -249,7 +225,7 @@ ouputs.
 			fi
 		fi
 	else
-	mkdir -p $outdir0
+	mkdir -p $outdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
 		if [[  "$ref" == "denovo" ]]; then
@@ -630,6 +606,8 @@ Please be patient.
 	if [[ "$Load_mysql" == "YES" ]]; then
 	bash $scriptdir/load-db.sh $stdout $stderr $randcode $outdirname
 	fi
+
+	done
 
 exit 0
 
