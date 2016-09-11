@@ -39,9 +39,12 @@ fi
 if [[ -f $sortcountfile ]]; then
 	rm -r $sortcountfile
 fi
+if [[ -f $outlist ]]; then
+	rm -r $outlist
+fi
 }
 trap finish EXIT
-
+outlist
 ## Define inputs and working directory
 	scriptdir="$(cd "$(dirname "$0")" && pwd)"
 	repodir=`dirname $scriptdir`
@@ -142,6 +145,7 @@ Missing required input files. Exiting.
 	fi
 
 ## Sort reads if sortlist is present and create list of output directories
+	outlist="$tempdir/${randcode}_outlist.temp"
 	if [[ "$sortdata" == "yes" ]]; then
 	sortcount0=$(cat $sortlist | wc -l)
 	sortcount=$(($sortcount0-1))
@@ -150,11 +154,13 @@ Missing required input files. Exiting.
 		for i in `head -$sortcount0 $sortcountfile`; do
 			name=$(grep -w "^$i" $sortlist | cut -f2)
 			j="RADseq_workflow_${analysis}_${name}"
-			echo $j
+			echo $j >> $outlist
 		done
-	#elif [[ "$sortdata" == "no" ]]; then
-	
+	elif [[ "$sortdata" == "no" ]]; then
+		echo "Radseq_workflow_${analysis}_alldata" >> $outlist	
 	fi
+
+cat $outlist
 
 exit 0 
 
