@@ -36,6 +36,9 @@ fi
 if [[ -f $mapcheck ]]; then
 	rm -r $mapcheck
 fi
+if [[ -f $sortcountfile ]]; then
+	rm -r $sortcountfile
+fi
 }
 trap finish EXIT
 
@@ -128,18 +131,94 @@ Missing required input files. Exiting.
 ## Read sequencing mode from demult-derep output
 	mode1=$(cat demult-derep_output/.sequencing_mode)
 
+
+## Identify any sorting steps from sort file (sortlist.txt)
+	sortlist=$(ls sortlist.txt 2>/dev/null)
+	if [[ ! -z "$sortlist" ]]; then
+	sortdata="yes"
+	sed -i "/^$/d" $sortlist
+	else
+	sortdata="no"
+	fi
+
+	if [[ "$sortdata" == "yes" ]]; then
+	sortcount0=$(cat $sortlist | wc -l)
+	sortcount=$(($sortcount0-1))
+	sortcountfile="$tempdir/${randcode}_sortcountfile.temp"
+	cat $sortlist | cut -f1 > $sortcountfile
+	
+	## Map to references
+	echo "Mapping raw files against $sortcount reference(s).
+	"
+	for i in `head -$sortcount $sortcountfile`; do
+		count=$(grep -w "^$i" $sortlist | cut -f1)
+		name=$(grep -w "^$i" $sortlist | cut -f2)
+		path=$(grep -w "^$i" $sortlist | cut -f3)
+		pathext="${path##*.}"
+		pathdir=$(dirname $path)
+		namebase=$(basename $path .$pathext)
+		refname="$pathdir/$namebase"
+
+		## Index reference if necessary
+		if [[ ! -f "$refname.sma" && ! -f "$refname.smi" ]]; then
+			smalt index -k 11 -s 1 $refname $path &> $pathdir/log_smalt_indexing.txt
+		fi
+
+		## Set out directory
+		mapdir="${count}_mapping_${name}"
+		if [[ ! -d "$mapdir" ]]; then
+		mkdir $mapdir
+			for seqfile in `ls demult-derep_output/dereplicated_combined_data/*.fq`; do
+				seqname=$(basename $seqfile .fq)
+				echo "
+$seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
+				smalt map -n 20 -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
+				
+			done
+		else
+		echo "
+Output directory already present for mapping against $name. Skipping.
+$mapdir		"
+		fi
+	
+
+echo $path
+echo $pathext
+echo $pathdir
+echo $namebase
+echo $refname
+	
+	done
+
+	fi
+
+exit 0
+
+for i in `cat $sortcountfile`; do
+	count=$(grep -w "^$i" $sortlist | cut -f1)
+	name=$(grep -w "^$i" $sortlist | cut -f2)
+	path=$(grep -w "^$i" $sortlist | cut -f3)
+	echo "
+	$count	$name	$path
+	"	
+done
+
+
+exit 0
+
+
 ## Define output directory, log file, and database name
-	outdir="$workdir/RADseq_workflow_${analysis}"
-	popmap="$outdir/populations_file.txt"
+	outdir0="$workdir/RADseq_workflow_${analysis}"
+	popmap="$outdir0/populations_file.txt"
 	outdirname="RADseq_workflow_${analysis}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
-	if [[ -d "$outdir" ]]; then
+	if [[ -d "$outdir0" ]]; then
 	echo "
-Output directory already exists.  Attempting to use previously generated
+Output directory already exists. Attempting to use previously generated
 ouputs.
 	"
-	log=`ls $outdir/log_RADseq_workflow_* | head -1`
+	log=`ls $outdir0/log_RADseq_workflow_* | head -1`
 		if [[ -f "$outdir/.dbname" ]]; then
 		db=$(cat $outdir/.dbname)
 		else
@@ -152,7 +231,7 @@ ouputs.
 			fi
 		fi
 	else
-	mkdir -p $outdir
+	mkdir -p $outdir0
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
 		if [[  "$ref" == "denovo" ]]; then
@@ -230,6 +309,8 @@ Sequencing mode detected: $mode1
 Analysis type: $analysis1
 CPU cores: $cores
 "
+
+
 
 ###################################################################
 ## ANALYSIS STEPS BEGIN HERE
