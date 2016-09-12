@@ -160,11 +160,14 @@ Missing required input files. Exiting.
 		echo "Radseq_workflow_${analysis}_alldata" >> $outlist	
 	fi
 
-## Map to references
+## Map to reference(s)
 	if [[ "$sortdata" == "yes" ]]; then
 	echo "Mapping raw files against $sortcount reference(s).
 	"
-	for i in `head -$sortcount $sortcountfile`; do
+	i="1"
+	while [[ "$i" -le "$sortcount" ]]; do
+
+	#for i in `head -$sortcount $sortcountfile`; do
 		count=$(grep -w "^$i" $sortlist | cut -f1)
 		name=$(grep -w "^$i" $sortlist | cut -f2)
 		path=$(grep -w "^$i" $sortlist | cut -f3)
@@ -175,19 +178,36 @@ Missing required input files. Exiting.
 
 ## Index reference if necessary
 		if [[ ! -f "$refname.sma" && ! -f "$refname.smi" ]]; then
+			echo "Indexing reference genome ($name)
+			"
 			smalt index -k 11 -s 1 $refname $path &> $pathdir/log_smalt_indexing.txt
 		fi
 
 ## Set out directory and map reads
 		mapdir="read_sorting/${count}_mapping_${name}"
 		if [[ ! -d "$mapdir" ]]; then
-		mkdir $mapdir
+		mkdir -p $mapdir
+		echo "Mapping reads against reference genome ($name)
+		"
 			for seqfile in `ls demult-derep_output/dereplicated_combined_data/*.fq`; do
 				seqname=$(basename $seqfile .fq)
 				echo "
 $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
-				smalt map -n 20 -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
-				
+				## Smalt command (bam output)
+				smalt map -f sam -n 20 -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
+				## Convert output to bam (could be avoided if bambamc library becomes available)
+				samtools view -b -S -o $mapdir/$seqname.bam $mapdir/$seqname.sam &>/dev/null
+				rm $mapdir/$seqname.sam
+				## Sort result into mapped and unmapped fastq files
+				## Mapped reads
+				samtools view -F 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.mapped.bam
+				## Unmapped reads
+				samtools view -f 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.unmapped.bam
+				## Convert mapped reads to fastq and remove .bam file
+				bedtools bamtofastq -i $mapdir/$seqname.mapped.bam -fq $mapdir/$seqname.mapped.fq
+				## Remove excess files
+				rm $mapdir/$seqname.mapped.bam
+				rm $mapdir/$seqname.bam
 			done
 		else
 		echo "
@@ -195,8 +215,9 @@ Output directory already present for mapping against $name. Skipping.
 $mapdir		"
 		fi
 	
+	#done
+	i=$[$i+1]
 	done
-
 	fi
 exit 0
 
