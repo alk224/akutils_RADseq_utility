@@ -42,6 +42,9 @@ fi
 if [[ -f $outlist ]]; then
 	rm -r $outlist
 fi
+if [[ -f $seqlist ]]; then
+	rm -r $seqlist
+fi
 }
 trap finish EXIT
 
@@ -166,15 +169,28 @@ Missing required input files. Exiting.
 	"
 	i="1"
 	while [[ "$i" -le "$sortcount" ]]; do
+		j=$[$i-1]
+		k=$[$i+1]
 
-	#for i in `head -$sortcount $sortcountfile`; do
+	## For i in `head -$sortcount $sortcountfile`; do
 		count=$(grep -w "^$i" $sortlist | cut -f1)
 		name=$(grep -w "^$i" $sortlist | cut -f2)
 		path=$(grep -w "^$i" $sortlist | cut -f3)
+		countj=$(grep -w "^$j" $sortlist | cut -f1)
+		namej=$(grep -w "^$j" $sortlist | cut -f2)
+		countk=$(grep -w "^$k" $sortlist | cut -f1)
+		namek=$(grep -w "^$k" $sortlist | cut -f2)
 		pathext="${path##*.}"
 		pathdir=$(dirname $path)
 		namebase=$(basename $path .$pathext)
 		refname="$pathdir/$namebase"
+		seqlist="$tempdir/${randcode}_seqlist.temp"
+
+		## Iterated inputs
+		if [[ "$i" -ge "2" ]]; then
+			seqdir="$workdir/read_sorting/${countj}_mapping_${namej}"
+		ls $seqdir/*.unmapped.fq > $seqlist
+		fi
 
 ## Index reference if necessary
 		if [[ ! -f "$refname.sma" && ! -f "$refname.smi" ]]; then
@@ -185,12 +201,24 @@ Missing required input files. Exiting.
 
 ## Set out directory and map reads
 		mapdir="read_sorting/${count}_mapping_${name}"
+
+	## Define outputs depending on interation
+		if [[ "$i" == "1" ]]; then
+			seqdir="$workdir/demult-derep_output/dereplicated_combined_data"
+			ls $seqdir/*.fq > $seqlist
+		fi
+
 		if [[ ! -d "$mapdir" ]]; then
 		mkdir -p $mapdir
 		echo "Mapping reads against reference genome ($name)
 		"
-			for seqfile in `ls demult-derep_output/dereplicated_combined_data/*.fq`; do
+			for seqfile in `cat $seqlist`; do
+				if [[ "$i" == "1" ]]; then
 				seqname=$(basename $seqfile .fq)
+				elif [[ "$i" -ge "2" ]]; then
+				seqname=$(basename $seqfile .unmapped.fq)
+				fi
+
 				echo "
 $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				## Smalt command (bam output)
@@ -203,11 +231,24 @@ $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				samtools view -F 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.mapped.bam
 				## Unmapped reads
 				samtools view -f 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.unmapped.bam
-				## Convert mapped reads to fastq and remove .bam file
-				bedtools bamtofastq -i $mapdir/$seqname.mapped.bam -fq $mapdir/$seqname.mapped.fq
+				## Convert mapped reads to fastq
+				bedtools bamtofastq -i $mapdir/$seqname.mapped.bam -fq $mapdir/$seqname.$name.fq
+				## Convert unmapped reads to fastq
+				bedtools bamtofastq -i $mapdir/$seqname.unmapped.bam -fq $mapdir/$seqname.unmapped.fq
 				## Remove excess files
 				rm $mapdir/$seqname.mapped.bam
+				rm $mapdir/$seqname.unmapped.bam
 				rm $mapdir/$seqname.bam
+				if [[ "$i" -ge "2" ]]; then
+				rm $seqfile
+				fi
+
+				## Move output to final directory on last iteration
+				if [[ "$i" == "$sortcount" ]]; then
+				finaldir="read_sorting/${countk}_mapping_${namek}/"
+				mkdir -p $finaldir
+				mv $mapdir/$seqname.unmapped.fq $finaldir/$seqname.$namek.fq
+				fi
 			done
 		else
 		echo "
@@ -215,10 +256,12 @@ Output directory already present for mapping against $name. Skipping.
 $mapdir		"
 		fi
 	
-	#done
+	## Iterate
 	i=$[$i+1]
+
 	done
 	fi
+
 exit 0
 
 ## Define output directory, log file, and database name
