@@ -44,13 +44,14 @@ trap finish EXIT
 	randcode=($3)
 	dbdir=($4)
 
-	log=$(ls $dbdir/log_*)
+	log=$(ls $dbdir/log_RADseq_workflow* | head -1)
 	db=$(cat $dbdir/.dbname)
 	outdircor="$dbdir/corrected_output"
 	config=$(bash $scriptdir/config_id.sh)
 	batch=(`grep "Batch_ID" $config | grep -v "#" | cut -f 2`)
 	popmap="$dbdir/populations_file.txt"
 	hn=$(hostname)
+echo "log from load-db: $log"
 
 ## Check that mysql is present before continuing
 	mysqltest=$(command -v mysql 2>/dev/null | wc -l)

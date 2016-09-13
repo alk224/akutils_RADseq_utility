@@ -163,7 +163,9 @@ Missing required input files. Exiting.
 		echo "Radseq_workflow_${analysis}_alldata" >> $outlist	
 	fi
 
-## Map to reference(s)
+## Map to references (read sorting)
+	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
+
 	if [[ "$sortdata" == "yes" ]]; then
 	echo "Mapping raw files against $sortcount reference(s).
 	"
@@ -222,7 +224,7 @@ Missing required input files. Exiting.
 				echo "
 $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				## Smalt command (bam output)
-				smalt map -f sam -n 20 -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
+				smalt map -f sam -n $cores -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
 				## Convert output to bam (could be avoided if bambamc library becomes available)
 				samtools view -b -S -o $mapdir/$seqname.bam $mapdir/$seqname.sam &>/dev/null
 				rm $mapdir/$seqname.sam
@@ -232,7 +234,7 @@ $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				## Unmapped reads
 				samtools view -f 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.unmapped.bam
 				## Convert mapped reads to fastq
-				bedtools bamtofastq -i $mapdir/$seqname.mapped.bam -fq $mapdir/$seqname.$name.fq
+				bedtools bamtofastq -i $mapdir/$seqname.mapped.bam -fq $mapdir/$seqname.fq
 				## Convert unmapped reads to fastq
 				bedtools bamtofastq -i $mapdir/$seqname.unmapped.bam -fq $mapdir/$seqname.unmapped.fq
 				## Remove excess files
@@ -247,7 +249,7 @@ $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				if [[ "$i" == "$sortcount" ]]; then
 				finaldir="read_sorting/${countk}_mapping_${namek}/"
 				mkdir -p $finaldir
-				mv $mapdir/$seqname.unmapped.fq $finaldir/$seqname.$namek.fq
+				mv $mapdir/$seqname.unmapped.fq $finaldir/$seqname.fq
 				fi
 			done
 		else
@@ -261,14 +263,30 @@ $mapdir		"
 
 	done
 	fi
-
-exit 0
+echo "
+sortlist:"
+cat $sortlist
+echo "
+outlist:"
+cat $outlist
 
 ## Define output directory, log file, and database name
+	k="1"
 	for i in `cat $outlist`; do
-	outdir="$workdir/$i"
+
+	## Set source if reads were mapped or not
+	if [[ "$sortdata" == "no" ]]; then
+		sourcedir="$workdir/demult-derep_output/dereplicated_combined_data/"
+	else
+		count=$(grep -w "^$k" $sortlist | cut -f1)
+		name=$(grep -w "^$k" $sortlist | cut -f2)
+		sourcedir="$workdir/read_sorting/${count}_mapping_${name}/"
+	fi
+
+	## Set other variables
+	outdir="$workdir/$i/"
 	popmap="$outdir/populations_file.txt"
-	outdirname="RADseq_workflow_${analysis}"
+	outdirname="$i"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
 	if [[ -d "$outdir" ]]; then
@@ -292,12 +310,23 @@ ouputs.
 	mkdir -p $outdir
 	log=($outdir/log_RADseq_workflow_${date0})
 	touch $log
+
+		if [[ "$sortdata" == "yes" ]]; then
 		if [[  "$ref" == "denovo" ]]; then
-			db=(${dbname}_DENOVO_radtags)
+			db=(${dbname}_DENOVO_${name}_radtags)
 			echo "$db" > $outdir/.dbname
 		else
-			db=(${dbname}_REFERENCE_radtags)
+			db=(${dbname}_REFERENCE_${name}_radtags)
 			echo "$db" > $outdir/.dbname
+		fi
+		else
+		if [[  "$ref" == "denovo" ]]; then
+			db=(${dbname}_DENOVO_alldata_radtags)
+			echo "$db" > $outdir/.dbname
+		else
+			db=(${dbname}_REFERENCE_alldata_radtags)
+			echo "$db" > $outdir/.dbname
+		fi
 		fi
 	fi
 
@@ -332,7 +361,6 @@ Configuration file settings:" >> $log
 	echo "" >> $log
 
 ## Read configured variables into script
-	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
 	threads=$(expr $cores + 1)
 	qual=(`grep "Qual_score" $config | grep -v "#" | cut -f 2`)
 	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
@@ -437,7 +465,7 @@ $outdirunc/ustacks_output
 	"
 	echo "Assembling loci denovo with ustacks.
 	" >> $log
-		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile $log
+		bash $scriptdir/ustacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $sourcedir $repfile $log
 	fi
 	fi
 wait
@@ -671,6 +699,7 @@ Please be patient.
 	bash $scriptdir/load-db.sh $stdout $stderr $randcode $outdirname
 	fi
 
+	k=$[$k+1]
 	done
 
 exit 0
