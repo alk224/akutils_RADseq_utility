@@ -45,7 +45,9 @@ trap finish EXIT
 	config=($4)
 	outdir=($5)
 	outdirunc=($6)
-	repfile=($7)
+	sourcedir=($7)
+	repfile=($8)
+	log=($9)
 
 ## Read additional variables from config file
 	cores=(`grep "CPU_cores" $config | grep -v "#" | cut -f 2`)
@@ -56,8 +58,8 @@ trap finish EXIT
 	mkdir -p $outdirunc/pstacks_output
 		for line in `cat $repfile | cut -f1`; do
 		sqlid=$(cat /dev/urandom |tr -dc '0-9' | fold -w 8 | head -n 1)
-		echo "  pstacks -t sam -f $outdir/bowtie2_alignments/${line}.aligned.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth" >> $log
-		pstacks -t sam -f $outdir/bowtie2_alignments/${line}.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth &> $outdirunc/pstacks_output/log_${line}_pstacks.txt
+		echo "  pstacks -t sam -f $sourcedir/${line}.aligned.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth" >> $log
+		pstacks -t sam -f $sourcedir/${line}.sam -p $cores -o $outdirunc/pstacks_output -i $sqlid -m $Min_depth &> $outdirunc/pstacks_output/log_${line}_pstacks.txt
 		done
 
 exit 0

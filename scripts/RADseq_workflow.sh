@@ -198,7 +198,7 @@ Missing required input files. Exiting.
 		if [[ ! -f "$refname.sma" && ! -f "$refname.smi" ]]; then
 			echo "Indexing reference genome ($name)
 			"
-			smalt index -k 11 -s 1 $refname $path &> $pathdir/log_smalt_indexing.txt
+			smalt index -k 20 -s 13 $refname $path &> $pathdir/log_smalt_indexing.txt
 		fi
 
 ## Set out directory and map reads
@@ -227,7 +227,7 @@ $seqname output:" >> $mapdir/log_smalt_mapping_${name}.txt
 				smalt map -f sam -n $cores -o $mapdir/$seqname.sam $refname $seqfile &>> $mapdir/log_smalt_mapping_${name}.txt
 				## Convert output to bam (could be avoided if bambamc library becomes available)
 				samtools view -b -S -o $mapdir/$seqname.bam $mapdir/$seqname.sam &>/dev/null
-				rm $mapdir/$seqname.sam
+				#rm $mapdir/$seqname.sam
 				## Sort result into mapped and unmapped fastq files
 				## Mapped reads
 				samtools view -F 4 -b $mapdir/$seqname.bam > $mapdir/$seqname.mapped.bam
@@ -263,32 +263,46 @@ $mapdir		"
 
 	done
 	fi
-echo "
-sortlist:"
-cat $sortlist
-echo "
-outlist:"
-cat $outlist
 
 ## Define output directory, log file, and database name
 	k="1"
 	for i in `cat $outlist`; do
 
 	## Set source if reads were mapped or not
-	if [[ "$sortdata" == "no" ]]; then
+	if [[ "$sortdata" == "no" && "analysis" == "denovo" ]]; then
 		sourcedir="$workdir/demult-derep_output/dereplicated_combined_data/"
 	else
 		count=$(grep -w "^$k" $sortlist | cut -f1)
 		name=$(grep -w "^$k" $sortlist | cut -f2)
 		sourcedir="$workdir/read_sorting/${count}_mapping_${name}/"
+
+		if [[  "$analysis" == "denovo" ]]; then
+			analysis2="denovo"
+			analysis3="De novo"
+			ref2="denovo"
+		fi
+
+		if [[  "$analysis2" == "denovo" ]]; then
+			analysis="denovo"
+			analysis1="De novo"
+			ref="denovo"
+		fi		
+
+		if [[ "$k" -le "$sortcount" ]]; then
+			analysis="reference"
+			analysis1="Reference-based"
+			ref="Controlled by sortfile.txt"
+		fi		
 	fi
 
+
 	## Set other variables
-	outdir="$workdir/$i/"
+	outdir="$workdir/${i}_${dbname}/"
 	popmap="$outdir/populations_file.txt"
-	outdirname="$i"
+	outdirname="${i}_${dbname}"
 	outdirunc=($outdir/uncorrected_output)
 	outdircor=($outdir/corrected_output)
+
 	if [[ -d "$outdir" ]]; then
 	echo "
 Output directory already exists. Attempting to use previously generated
@@ -396,14 +410,13 @@ Analysis type: $analysis1
 CPU cores: $cores
 "
 
-
-
 ###################################################################
 ## ANALYSIS STEPS BEGIN HERE
 ###################################################################
 
 ## Align each sample to reference (reference-based analysis only)
 	res2=$(date +%s.%N)
+	if [[ "sortdata" == "no" ]]; then
 	if [[ "$analysis" == "reference" ]]; then
 	if [[ -d $outdir/bowtie2_alignments ]]; then
 echo "Alignments previously performed.  Skipping step.
@@ -420,6 +433,7 @@ echo "Aligning sequence data to supplied reference sequence.
 $ref
 " >> $log
 		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $config $ref $outdir $mode $mapfile $threads
+	fi
 	fi
 	fi
 wait
@@ -445,7 +459,7 @@ $outdirunc/pstacks_output" >> $log
 	"
 	echo "Extracting stacks from sam files with pstacks.
 	" >> $log
-		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $repfile
+		bash $scriptdir/pstacks_slave.sh $stdout $stderr $randcode $config $outdir $outdirunc $sourcedir $repfile $log
 	fi
 	fi
 wait
