@@ -160,7 +160,7 @@ Missing required input files. Exiting.
 			echo $j >> $outlist
 		done
 	elif [[ "$sortdata" == "no" ]]; then
-		echo "Radseq_workflow_${analysis}_alldata" >> $outlist	
+		echo "RADseq_workflow_${analysis}_alldata" >> $outlist	
 	fi
 
 ## Map to references (read sorting)
@@ -269,7 +269,7 @@ $mapdir		"
 	for i in `cat $outlist`; do
 
 	## Set source if reads were mapped or not
-	if [[ "$sortdata" == "no" && "analysis" == "denovo" ]]; then
+	if [[ "$sortdata" == "no" && "$analysis" == "denovo" ]]; then
 		sourcedir="$workdir/demult-derep_output/dereplicated_combined_data/"
 	else
 		count=$(grep -w "^$k" $sortlist | cut -f1)
@@ -294,7 +294,6 @@ $mapdir		"
 			ref="Controlled by sortfile.txt"
 		fi		
 	fi
-
 
 	## Set other variables
 	outdir="$workdir/${i}_${dbname}/"
