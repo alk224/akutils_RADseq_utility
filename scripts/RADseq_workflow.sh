@@ -191,7 +191,7 @@ Missing required input files. Exiting.
 		## Iterated inputs
 		if [[ "$i" -ge "2" ]]; then
 			seqdir="$workdir/read_sorting/${countj}_mapping_${namej}"
-		ls $seqdir/*.unmapped.fq > $seqlist
+		ls $seqdir/*.unmapped.fq 1> $seqlist 2>/dev/null
 		fi
 
 ## Index reference if necessary
@@ -275,6 +275,7 @@ $mapdir		"
 		count=$(grep -w "^$k" $sortlist | cut -f1)
 		name=$(grep -w "^$k" $sortlist | cut -f2)
 		sourcedir="$workdir/read_sorting/${count}_mapping_${name}/"
+		ref0="$ref"
 
 		if [[  "$analysis" == "denovo" ]]; then
 			analysis2="denovo"
@@ -415,7 +416,7 @@ CPU cores: $cores
 
 ## Align each sample to reference (reference-based analysis only)
 	res2=$(date +%s.%N)
-	if [[ "sortdata" == "no" ]]; then
+	if [[ "$sortdata" == "no" ]]; then
 	if [[ "$analysis" == "reference" ]]; then
 	if [[ -d $outdir/bowtie2_alignments ]]; then
 echo "Alignments previously performed.  Skipping step.
@@ -431,7 +432,31 @@ $ref
 echo "Aligning sequence data to supplied reference sequence.
 $ref
 " >> $log
-		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $config $ref $outdir $mode $mapfile $threads
+		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $randcode $config $ref $outdir $mode $mapfile $threads $log
+	fi
+	fi
+	fi
+wait
+
+## Align each sample to reference (reference-based analysis only)
+	res2=$(date +%s.%N)
+	if [[ "$sortdata" == "yes" ]]; then
+	if [[ "$analysis" == "reference" ]]; then
+	if [[ -d $outdir/bowtie2_alignments ]]; then
+echo "Alignments previously performed.  Skipping step.
+$outdir/bowtie2_alignments
+"
+echo "Alignments previously performed.  Skipping step.
+$outdir/bowtie2_alignments
+" >> $log
+	else
+echo "Aligning sequence data to supplied reference sequence.
+$ref0
+"
+echo "Aligning sequence data to supplied reference sequence.
+$ref0
+" >> $log
+		bash $scriptdir/bowtie2_slave.sh $stdout $stderr $config $ref0 $outdir $mapfile $threads $log $sortdata
 	fi
 	fi
 	fi

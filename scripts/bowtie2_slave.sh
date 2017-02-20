@@ -41,42 +41,53 @@ trap finish EXIT
 
 	stdout=($1)
 	stderr=($2)
-	randcode=($3)
-	config=($4)
-	ref=($5)
-	outdir=($6)
-	mode=($7)
-	mapfile=($8)
-	threads=($9)
+	#randcode=($3)
+	config=($3)
+	ref=($4)
+	outdir=($5)
+	#mode=($6)
+	mapfile=($6)
+	threads=($7)
+	log=($8)
+	sortdata=($9)
+
+## Find files for alignment
+	if [[ "$sortdata" == "yes" ]]; then
+		count=$(tail -1 sortlist.txt | cut -f1)
+		name=$(tail -1 sortlist.txt | cut -f2)
+		indir="read_sorting/${count}_mapping_${name}"
+	else
+		indir="demult-derep_output/dereplicated_combined_data"
+	fi
 
 ## Bowtie2 commands
 ## Error exists. Needs to reference the correct data source
 ###########################################################
-echo "Aligning quality-filtered data to reference sequence(s).
+echo "Aligning sequence data to reference sequence(s).
 Supplied reference: $ref
 "
-echo "Aligning quality-filtered data to reference sequence(s).
+echo "Aligning sequence data to reference sequence(s).
 Supplied reference: $ref
 " >> $log
 mkdir -p $outdir/bowtie2_alignments
-	if [[ "$mode" == "single" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
+#	if [[ "$mode" == "single" ]]; then
+	for line in `cat $outdir/populations_file.txt | cut -f1`; do
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
-		( bowtie2-align --local -x $ref -U $outdir/quality_filtered_data/${line}.read.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+		echo "	bowtie2-align --local -x $ref -U $indir/${line}.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+		( bowtie2-align --local -x $ref -U $indir/${line}.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
 	done
-	fi
-	if [[ "$mode" == "paired" ]]; then
-	for line in `cat $mapfile | cut -f1`; do
-		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
-		sleep 1
-		done
-		echo "	bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
-		( bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
-	done
-	fi
+#	fi
+#	if [[ "$mode" == "paired" ]]; then
+#	for line in `cat $mapfile | cut -f1`; do
+#		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
+#		sleep 1
+#		done
+#		echo "	bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt" >> $log
+#		( bowtie2-align --local -x $ref -1 $outdir/quality_filtered_data/${line}.read1.mcf.fq -2 $outdir/quality_filtered_data/${line}.read2.mcf.fq -S $outdir/bowtie2_alignments/${line}.sam > $outdir/bowtie2_alignments/log_${line}_bowtie2.txt 2>&1 || true ) &
+#	done
+#	fi
 wait
 
 exit 0

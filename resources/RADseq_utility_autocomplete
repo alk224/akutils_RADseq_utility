@@ -45,7 +45,7 @@ _RADseq_utility()
 		Deleverage_alg Duplicate_match Tag_mismatches
 		Catalog_match Min_perc_pop Min_pops Min_stack_depth
 		Fstats Single_snp Random_snp Kernel_smooth Window_size
-		Load_mysql Compress_output
+		Load_mysql Compress_output Read_length
 		help"
 	  COMPREPLY=( $(compgen -W "${sub}" -- ${cur}) )
 	  ;;

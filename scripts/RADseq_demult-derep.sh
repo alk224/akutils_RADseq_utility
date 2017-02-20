@@ -130,7 +130,24 @@ Exiting.
 	threads=$(expr $cores + 1)
 	qual=(`grep "Qual_score" $config | grep -v "#" | cut -f 2`)
 	multx_errors=(`grep "Multx_errors" $config | grep -v "#" | cut -f 2`)
+	read_length=(`grep "Read_length" $config | grep -v "#" | cut -f 2`)
 	slminpercent="0.95"
+
+## Check that actual read length is not shorter than desired read length
+	seqlength=$((`sed '2q;d' $read1 | egrep "\w+" | wc -m`-1))
+	length_check=$(echo "$seqlength-$read_length" | bc | cut -d. -f1)
+	if [[ "$length_check" -lt "0" ]]; then
+		echo "
+Your sequencing reads are shorter than your desired read length as specified in
+your config file.
+
+Actual read length: $seqlength
+Desired read length: $read_length
+
+Adjust your config file accordingly (run RADseq_utility configure). Exiting.
+		"
+		exit 1
+	fi
 
 ## Log demult-derep start
 	res0=$(date +%s.%N)
@@ -140,7 +157,6 @@ Sequencing mode detected: $mode1
 echo "RADseq_utility demult-derep beginning.
 Sequencing mode detected: $mode1
 " >> $log
-
 
 ## Parse metadata file contents
 echo "Parsing metadata file contents.
@@ -186,7 +202,7 @@ your inputs and try again. Exiting.
 	popmap1="$tempdir/${randcode}_popids1.temp"
 	popmap="$outdir/populations_file.txt"
 	for line in `cat $repfile`; do
-	grep $line.1 $popmap0 | cut -f2 >> $popmap1
+	grep ${line}.1 $popmap0 | cut -f2 >> $popmap1
 	done
 	paste $repfile $popmap1 > $popmap
 
@@ -248,9 +264,11 @@ $outdir/dereplicated_data
 	mkdir -p $outdir/dereplicated_data
 
 	for sampleid in `cat $repfile`; do
-		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read1.fq
 		if [[ "$mode" == "paired" ]]; then
+		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read1.fq
 		cat $outdir/demultiplexed_data/${sampleid}*read2.fq > $outdir/dereplicated_data/${sampleid}.read2.fq
+		elif [[ "$mode" == "single" ]]; then
+		cat $outdir/demultiplexed_data/${sampleid}*read1.fq > $outdir/dereplicated_data/${sampleid}.read.fq
 		fi
 	done
 
@@ -259,17 +277,15 @@ $outdir/dereplicated_data
 
 ## Quality filter dereplicated data with fastq-mcf
 	if [[ ! -d $outdir/dereplicated_quality_filtered_data ]]; then
-	seqlength=$((`sed '2q;d' $read1 | egrep "\w+" | wc -m`-1))
-	length=$(echo "$slminpercent*$seqlength" | bc | cut -d. -f1)
 	echo "Quality filtering raw data with fastq-mcf.
 Read lengths detected: $seqlength
 Minimum quality threshold: $qual
-Minimum length to retain: $length
+Read length to retain: $read_length
 	"
 	echo "Quality filtering raw data with fastq-mcf.
 Read lengths detected: $seqlength
 Minimum quality threshold: $qual
-Minimum length to retain: $length
+Read length to retain: $read_length
 	" >> $log
 	res2=$(date +%s.%N)
 
@@ -280,8 +296,8 @@ Minimum length to retain: $length
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
+		echo "	fastq-mcf -q $qual -l $read_length -L $read_length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq" >> $log
+		( fastq-mcf -q $qual -l $read_length -L $read_length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read.fq -o $outdir/dereplicated_quality_filtered_data/$line.read.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
 	done
 	fi
 	if [[ "$mode" == "paired" ]]; then
@@ -289,8 +305,8 @@ Minimum length to retain: $length
 		while [ $( pgrep -P $$ |wc -w ) -ge ${threads} ]; do
 		sleep 1
 		done
-		echo "	fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq" >> $log
-		( fastq-mcf -q $qual -l $length -L $length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
+		echo "	fastq-mcf -q $qual -l $read_length -L $read_length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq" >> $log
+		( fastq-mcf -q $qual -l $read_length -L $read_length -k 0 -t 0.001 $adapters $outdir/dereplicated_data/$line.read1.fq $outdir/dereplicated_data/$line.read2.fq -o $outdir/dereplicated_quality_filtered_data/$line.read1.mcf.fq -o $outdir/dereplicated_quality_filtered_data/$line.read2.mcf.fq > $outdir/dereplicated_quality_filtered_data/log_${line}_fastq-mcf.txt 2>&1 || true ) &
 	done
 	fi
 wait
