@@ -21,6 +21,6 @@ See [wiki pages](https://github.com/alk224/akutils_RADseq_utility/wiki) for spec
 
 **Citing akutils RADseq utility:**  
 
-Lela V. Andrews. (2018). akutils RADseq utility: Simplified processing of RADseq data through Stacks. Zenodo. 10.5281/zenodo.1205079
+Lela V. Andrews. (2018). akutils RADseq utility: Simplified processing of RADseq data through Stacks. Zenodo. http://doi.org/10.5281/zenodo.1205089
 
 [![DOI](https://zenodo.org/badge/44690256.svg)](https://zenodo.org/badge/latestdoi/44690256)
