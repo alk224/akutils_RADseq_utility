@@ -18,3 +18,9 @@ To enable bash autocompletion for RADseq_utility, run the install script from wi
 Most help and usage files are in place. Use help or -h --help to view help files. Enter a command with no arguments to see usage.  
 
 See [wiki pages](https://github.com/alk224/akutils_RADseq_utility/wiki) for specific command help and tutorial pages (coming soon).  
+
+**Citing akutils RADseq utility:**  
+
+Lela V. Andrews. (2018). akutils RADseq utility: Simplified processing of RADseq data through Stacks. Zenodo. 10.5281/zenodo.1205079
+
+[![DOI](https://zenodo.org/badge/44690256.svg)](https://zenodo.org/badge/latestdoi/44690256)
