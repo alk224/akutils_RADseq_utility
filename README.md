@@ -1,4 +1,4 @@
-#akutils_RADseq_utility  
+### akutils_RADseq_utility  
 
 RADseq analysis commands built on the akutils framework. Super easy to go from raw to analyzed data. Set up population data within a QIIME-inspired metadata file.  
 
